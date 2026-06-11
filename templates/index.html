@@ -1,181 +1,261 @@
 <!DOCTYPE html>
 <html lang="th">
+
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Beauty Finder</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<title>BeautyVerse</title>
 
-<style>
-body{
-    background:#f8f9fc;
-}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
 
-.hero{
-    background:linear-gradient(135deg,#ff7eb3,#ff758c);
-    color:white;
-    border-radius:25px;
-    padding:60px;
-}
+<link rel="stylesheet" href="css/style.css">
 
-.filter-card{
-    border:none;
-    border-radius:20px;
-    box-shadow:0 5px 20px rgba(0,0,0,.08);
-}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
-.product-card{
-    border:none;
-    border-radius:20px;
-    overflow:hidden;
-    transition:.3s;
-    box-shadow:0 5px 20px rgba(0,0,0,.08);
-}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
 
-.product-card:hover{
-    transform:translateY(-8px);
-    box-shadow:0 15px 30px rgba(0,0,0,.15);
-}
-
-.product-img{
-    height:250px;
-    object-fit:cover;
-}
-
-.price{
-    color:#ff4d6d;
-    font-size:1.4rem;
-    font-weight:bold;
-}
-
-.badge-spf{
-    background:#ffe5ec;
-    color:#ff4d6d;
-}
-</style>
 </head>
 
 <body>
 
-<div class="container py-4">
+<div class="bg-animation"></div>
 
-    <div class="hero mb-4 text-center">
-        <h1 class="display-5 fw-bold">
-            Beauty Finder
-        </h1>
+<div class="floating floating1"></div>
+<div class="floating floating2"></div>
+<div class="floating floating3"></div>
 
-        <p class="lead">
-            ค้นหาเครื่องสำอางและสกินแคร์ที่เหมาะกับคุณ
-        </p>
+<nav class="navbar navbar-expand-lg glass-nav">
 
-        <div class="row justify-content-center">
-            <div class="col-lg-6">
-                <input type="text"
-                       class="form-control form-control-lg"
-                       placeholder="ค้นหาชื่อสินค้า...">
-            </div>
-        </div>
-    </div>
+<div class="container">
 
-    <div class="row">
+<a class="navbar-brand logo" href="#">
+BeautyVerse
+</a>
 
-        <!-- Filter -->
-        <div class="col-lg-3">
+<button class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#menu">
+<span class="navbar-toggler-icon"></span>
+</button>
 
-            <div class="card filter-card p-3">
+<div class="collapse navbar-collapse" id="menu">
 
-                <h5>ตัวกรองสินค้า</h5>
+<ul class="navbar-nav ms-auto">
 
-                <hr>
+<li class="nav-item">
+<a class="nav-link" href="#">หน้าแรก</a>
+</li>
 
-                <label class="fw-bold">ประเภท</label>
+<li class="nav-item">
+<a class="nav-link" href="#">เครื่องสำอาง</a>
+</li>
 
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox">
-                    <label class="form-check-label">
-                        สกินแคร์
-                    </label>
-                </div>
+<li class="nav-item">
+<a class="nav-link" href="#">สกินแคร์</a>
+</li>
 
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox">
-                    <label class="form-check-label">
-                        กันแดด
-                    </label>
-                </div>
+<li class="nav-item">
+<a class="nav-link" href="#">รีวิว</a>
+</li>
 
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox">
-                    <label class="form-check-label">
-                        เมคอัพ
-                    </label>
-                </div>
-
-                <hr>
-
-                <label class="fw-bold mb-2">
-                    ราคา
-                </label>
-
-                <input type="range"
-                       class="form-range">
-
-            </div>
-
-        </div>
-
-        <!-- Products -->
-        <div class="col-lg-9">
-
-            <div class="row g-4">
-
-                <div class="col-md-4">
-
-                    <div class="card product-card">
-
-                        <img src="https://via.placeholder.com/400x400"
-                             class="product-img">
-
-                        <div class="card-body">
-
-                            <span class="badge badge-spf">
-                                SPF50+
-                            </span>
-
-                            <h5 class="mt-2">
-                                KA UV Shield
-                            </h5>
-
-                            <p class="text-muted">
-                                Soft Lotion SPF50+ PA++++
-                            </p>
-
-                            <div class="d-flex justify-content-between align-items-center">
-
-                                <span class="price">
-                                    ฿199
-                                </span>
-
-                                <button class="btn btn-danger">
-                                    ดูรายละเอียด
-                                </button>
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
-
-    </div>
+</ul>
 
 </div>
+
+</div>
+
+</nav>
+
+<section class="hero">
+
+<div class="container">
+
+<h1 class="hero-title">
+DISCOVER YOUR
+<span>BEAUTY</span>
+</h1>
+
+<p class="hero-subtitle">
+ค้นหาเครื่องสำอางที่เหมาะกับคุณที่สุด
+ด้วยระบบค้นหาอัจฉริยะ
+</p>
+
+<div class="search-box">
+
+<input
+type="text"
+placeholder="ค้นหาสินค้า, แบรนด์ หรือ SPF...">
+
+<button>
+<i class="fas fa-search"></i>
+</button>
+
+</div>
+
+</div>
+
+</section>
+
+<section class="container pb-5">
+
+<div class="row g-4">
+
+<div class="col-lg-3">
+
+<div class="glass-card filter-card">
+
+<h4>Filter</h4>
+
+<hr>
+
+<label>ประเภท</label>
+
+<select class="form-select">
+<option>ทั้งหมด</option>
+<option>กันแดด</option>
+<option>เซรั่ม</option>
+<option>ครีม</option>
+</select>
+
+<br>
+
+<label>ราคา</label>
+
+<input type="range" class="form-range">
+
+</div>
+
+</div>
+
+<div class="col-lg-9">
+
+<div class="row g-4">
+
+<div class="col-md-4">
+
+<div class="product-card">
+
+<div class="shine"></div>
+
+<img
+src="https://images.unsplash.com/photo-1625772452859-1c03d5bf1137?w=600"
+class="img-fluid">
+
+<div class="p-3">
+
+<span class="badge bg-danger">
+BEST SELLER
+</span>
+
+<h5>
+KA UV Shield
+</h5>
+
+<p>
+SPF50+ PA++++
+</p>
+
+<div class="price">
+฿199
+</div>
+
+<button class="btn btn-gradient w-100">
+ดูรายละเอียด
+</button>
+
+</div>
+
+</div>
+
+</div>
+
+<div class="col-md-4">
+
+<div class="product-card">
+
+<div class="shine"></div>
+
+<img
+src="https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=600"
+class="img-fluid">
+
+<div class="p-3">
+
+<span class="badge bg-primary">
+NEW
+</span>
+
+<h5>
+Vitamin Serum
+</h5>
+
+<p>
+Brightening Formula
+</p>
+
+<div class="price">
+฿399
+</div>
+
+<button class="btn btn-gradient w-100">
+ดูรายละเอียด
+</button>
+
+</div>
+
+</div>
+
+</div>
+
+<div class="col-md-4">
+
+<div class="product-card">
+
+<div class="shine"></div>
+
+<img
+src="https://images.unsplash.com/photo-1619451334792-150fd785ee74?w=600"
+class="img-fluid">
+
+<div class="p-3">
+
+<span class="badge bg-success">
+POPULAR
+</span>
+
+<h5>
+Night Cream
+</h5>
+
+<p>
+Hydration Care
+</p>
+
+<div class="price">
+฿599
+</div>
+
+<button class="btn btn-gradient w-100">
+ดูรายละเอียด
+</button>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+
+<script src="js/app.js"></script>
 
 </body>
 </html>
