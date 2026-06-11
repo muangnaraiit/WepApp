@@ -1,9 +1,181 @@
 <!DOCTYPE html>
-<html>
+<html lang="th">
 <head>
-    <title>My Website</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Beauty Finder</title>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<style>
+body{
+    background:#f8f9fc;
+}
+
+.hero{
+    background:linear-gradient(135deg,#ff7eb3,#ff758c);
+    color:white;
+    border-radius:25px;
+    padding:60px;
+}
+
+.filter-card{
+    border:none;
+    border-radius:20px;
+    box-shadow:0 5px 20px rgba(0,0,0,.08);
+}
+
+.product-card{
+    border:none;
+    border-radius:20px;
+    overflow:hidden;
+    transition:.3s;
+    box-shadow:0 5px 20px rgba(0,0,0,.08);
+}
+
+.product-card:hover{
+    transform:translateY(-8px);
+    box-shadow:0 15px 30px rgba(0,0,0,.15);
+}
+
+.product-img{
+    height:250px;
+    object-fit:cover;
+}
+
+.price{
+    color:#ff4d6d;
+    font-size:1.4rem;
+    font-weight:bold;
+}
+
+.badge-spf{
+    background:#ffe5ec;
+    color:#ff4d6d;
+}
+</style>
 </head>
+
 <body>
-    <h1>Hello World</h1>
+
+<div class="container py-4">
+
+    <div class="hero mb-4 text-center">
+        <h1 class="display-5 fw-bold">
+            Beauty Finder
+        </h1>
+
+        <p class="lead">
+            ค้นหาเครื่องสำอางและสกินแคร์ที่เหมาะกับคุณ
+        </p>
+
+        <div class="row justify-content-center">
+            <div class="col-lg-6">
+                <input type="text"
+                       class="form-control form-control-lg"
+                       placeholder="ค้นหาชื่อสินค้า...">
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+
+        <!-- Filter -->
+        <div class="col-lg-3">
+
+            <div class="card filter-card p-3">
+
+                <h5>ตัวกรองสินค้า</h5>
+
+                <hr>
+
+                <label class="fw-bold">ประเภท</label>
+
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox">
+                    <label class="form-check-label">
+                        สกินแคร์
+                    </label>
+                </div>
+
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox">
+                    <label class="form-check-label">
+                        กันแดด
+                    </label>
+                </div>
+
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox">
+                    <label class="form-check-label">
+                        เมคอัพ
+                    </label>
+                </div>
+
+                <hr>
+
+                <label class="fw-bold mb-2">
+                    ราคา
+                </label>
+
+                <input type="range"
+                       class="form-range">
+
+            </div>
+
+        </div>
+
+        <!-- Products -->
+        <div class="col-lg-9">
+
+            <div class="row g-4">
+
+                <div class="col-md-4">
+
+                    <div class="card product-card">
+
+                        <img src="https://via.placeholder.com/400x400"
+                             class="product-img">
+
+                        <div class="card-body">
+
+                            <span class="badge badge-spf">
+                                SPF50+
+                            </span>
+
+                            <h5 class="mt-2">
+                                KA UV Shield
+                            </h5>
+
+                            <p class="text-muted">
+                                Soft Lotion SPF50+ PA++++
+                            </p>
+
+                            <div class="d-flex justify-content-between align-items-center">
+
+                                <span class="price">
+                                    ฿199
+                                </span>
+
+                                <button class="btn btn-danger">
+                                    ดูรายละเอียด
+                                </button>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
 </body>
 </html>
