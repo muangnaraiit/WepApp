@@ -381,7 +381,12 @@
                     <div class="hint">ถ้าเลือก PC ระบบจะกำหนด รุ่นอุปกรณ์ = PC และ Serial Number = PC ให้อัตโนมัติ</div>
 
                     <label>ชื่อเครื่อง</label>
-                    <input type="text" name="computer_name" id="computer_name" placeholder="เช่น MNH-OPD-001">
+                    <input type="text" name="computer_name" id="computer_name" list="computer_name_list" placeholder="เช่น MNH-OPD-001">
+                    <datalist id="computer_name_list">
+                        {% for c in computer_names %}
+                            <option value="{{ c.computer_name }}">
+                        {% endfor %}
+                    </datalist>
 
                     <button type="submit" class="btn-primary">บันทึก / อัปเดตข้อมูล</button>
                     <button type="button" class="btn-clear" onclick="clearForm()">ล้างฟอร์ม</button>

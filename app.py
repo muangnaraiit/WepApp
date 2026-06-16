@@ -73,15 +73,31 @@ def home():
     cur.execute("""
         SELECT DISTINCT model
         FROM devices
-        WHERE model IS NOT NULL AND model <> ''
+        WHERE model IS NOT NULL
+          AND model <> ''
         ORDER BY model
     """)
     models = cur.fetchall()
 
+    cur.execute("""
+        SELECT DISTINCT computer_name
+        FROM devices
+        WHERE computer_name IS NOT NULL
+          AND computer_name <> ''
+        ORDER BY computer_name
+    """)
+    computer_names = cur.fetchall()
+
     cur.close()
     conn.close()
 
-    return render_template("index.html", rows=rows, models=models, search=search)
+    return render_template(
+        "index.html",
+        rows=rows,
+        models=models,
+        computer_names=computer_names,
+        search=search
+    )
 
 
 @app.route("/api/device/<path:mnh>")
