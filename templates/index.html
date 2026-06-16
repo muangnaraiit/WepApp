@@ -411,22 +411,22 @@
                     <table>
                         <thead>
                             <tr>
-                                <th>MNH</th>
+                                <th>ชื่อเครื่อง</th>
                                 <th>ประเภท</th>
                                 <th>รุ่น</th>
                                 <th>Serial</th>
-                                <th>ชื่อเครื่อง</th>
+                                <th>MNH</th>
                                 <th>จัดการ</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for row in rows %}
                             <tr>
-                                <td class="mnh">{{ row.mnh }}</td>
+                                <td>{{ row.computer_name or '-' }}</td>
                                 <td><span class="badge">{{ row.device_type }}</span></td>
                                 <td>{{ row.model or '-' }}</td>
                                 <td>{{ row.serial_number or '-' }}</td>
-                                <td>{{ row.computer_name or '-' }}</td>
+                                <td class="mnh">{{ row.mnh }}</td>
                                 <td>
                                     <div class="action-cell">
                                         <button
