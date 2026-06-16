@@ -5,36 +5,38 @@
     <title>ระบบตรวจเช็คอุปกรณ์ IT</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
+    <script src="https://unpkg.com/html5-qrcode"></script>
+
     <style>
         body {
             font-family: Tahoma, sans-serif;
             background: #eef3fb;
-            padding: 20px;
+            margin: 0;
+            padding: 12px;
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 900px;
             margin: auto;
             background: white;
-            padding: 25px;
-            border-radius: 18px;
-            box-shadow: 0 5px 20px rgba(0,0,0,.08);
+            padding: 18px;
+            border-radius: 16px;
         }
 
-        h1 {
+        h2 {
             text-align: center;
             color: #1d4ed8;
         }
 
         label {
-            display: block;
             font-weight: bold;
+            display: block;
             margin-top: 12px;
         }
 
         input, select, button {
             width: 100%;
-            padding: 12px;
+            padding: 14px;
             margin-top: 6px;
             border-radius: 10px;
             border: 1px solid #cbd5e1;
@@ -46,56 +48,45 @@
             background: #2563eb;
             color: white;
             border: none;
-            cursor: pointer;
             font-weight: bold;
         }
 
-        button:hover {
-            background: #1d4ed8;
+        .scan-btn {
+            background: #16a34a;
         }
 
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
+        .status {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 10px;
+            display: none;
         }
 
-        .full {
-            grid-column: span 2;
+        .found {
+            background: #dcfce7;
+            color: #166534;
         }
 
-        .note {
-            color: #64748b;
-            font-size: 13px;
-            margin-top: 4px;
+        .new {
+            background: #fef9c3;
+            color: #854d0e;
         }
 
-        .search-box {
-            margin-top: 25px;
-            display: flex;
-            gap: 10px;
-        }
-
-        .search-box input {
-            margin-top: 0;
-        }
-
-        .search-box button {
-            width: 160px;
-            margin-top: 0;
+        #reader {
+            display: none;
+            margin-top: 15px;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 25px;
+            font-size: 13px;
         }
 
         th, td {
             border: 1px solid #e2e8f0;
-            padding: 10px;
-            font-size: 14px;
-            text-align: left;
+            padding: 8px;
         }
 
         th {
@@ -103,25 +94,10 @@
             color: white;
         }
 
-        tr:nth-child(even) {
-            background: #f8fafc;
-        }
-
-        @media (max-width: 768px) {
-            .grid {
-                grid-template-columns: 1fr;
-            }
-
-            .full {
-                grid-column: span 1;
-            }
-
-            .search-box {
-                flex-direction: column;
-            }
-
-            .search-box button {
-                width: 100%;
+        @media (max-width: 600px) {
+            table {
+                display: block;
+                overflow-x: auto;
             }
         }
     </style>
@@ -129,91 +105,72 @@
 <body>
 
 <div class="container">
-    <h1>ระบบตรวจเช็คอุปกรณ์ IT</h1>
+    <h2>ระบบตรวจเช็คอุปกรณ์ IT</h2>
 
     <form method="post" action="/save">
-        <div class="grid">
 
-            <div>
-                <label>MNH</label>
-                <input type="text" name="mnh" id="mnh" placeholder="สแกน QR Code หรือกรอก MNH" required autofocus>
-                <div class="note">รองรับเครื่องสแกน QR Code / Barcode / ข้อความ</div>
-            </div>
+        <label>MNH</label>
+        <input type="text" name="mnh" id="mnh" required placeholder="สแกนหรือกรอก MNH">
+        <button type="button" class="scan-btn" onclick="startScan('mnh')">กดสแกน MNH</button>
 
-            <div>
-                <label>อุปกรณ์</label>
-                <select name="device_type" id="device_type" required>
-                    <option value="">-- เลือกประเภทอุปกรณ์ --</option>
-                    <option value="AIO">AIO</option>
-                    <option value="PC">PC</option>
-                    <option value="Monitor">Monitor</option>
-                    <option value="Printer">Printer</option>
-                    <option value="Scanner">Scanner</option>
-                    <option value="UPS">UPS</option>
-                    <option value="Notebook">Notebook</option>
-                    <option value="Projector">Projector</option>
-                </select>
-            </div>
+        <div id="statusBox" class="status"></div>
 
-            <div>
-                <label>รุ่น</label>
-                <input type="text" name="model" list="model_list" placeholder="กรอกรุ่น หรือเลือกจากข้อมูลเดิม">
-                <datalist id="model_list">
-                    {% for m in models %}
-                        <option value="{{ m.model }}">
-                    {% endfor %}
-                </datalist>
-            </div>
+        <label>อุปกรณ์</label>
+        <select name="device_type" id="device_type" required>
+            <option value="">-- เลือกอุปกรณ์ --</option>
+            <option value="AIO">AIO</option>
+            <option value="PC">PC</option>
+            <option value="Monitor">Monitor</option>
+            <option value="Printer">Printer</option>
+            <option value="Scanner">Scanner</option>
+            <option value="UPS">UPS</option>
+            <option value="Notebook">Notebook</option>
+            <option value="Projector">Projector</option>
+        </select>
 
-            <div>
-                <label>Serial Number</label>
-                <input type="text" name="serial_number" id="serial_number" placeholder="สแกน QR Code หรือกรอก Serial Number">
-                <div class="note">ถ้าเลือก PC ระบบจะใส่ Serial Number = MNH ให้อัตโนมัติ</div>
-            </div>
+        <label>รุ่น</label>
+        <input type="text" name="model" id="model" list="model_list" placeholder="กรอกรุ่น หรือเลือกจากข้อมูลเดิม">
+        <datalist id="model_list">
+            {% for m in models %}
+                <option value="{{ m.model }}">
+            {% endfor %}
+        </datalist>
 
-            <div class="full">
-                <label>ชื่อเครื่อง</label>
-                <input type="text" name="computer_name" placeholder="เช่น MNH-OPD-001">
-            </div>
+        <label>Serial Number</label>
+        <input type="text" name="serial_number" id="serial_number" placeholder="สแกนหรือกรอก Serial Number">
+        <button type="button" class="scan-btn" onclick="startScan('serial_number')">กดสแกน Serial Number</button>
 
-            <div class="full">
-                <button type="submit">บันทึกข้อมูล</button>
-            </div>
+        <label>ชื่อเครื่อง</label>
+        <input type="text" name="computer_name" id="computer_name" placeholder="เช่น MNH-OPD-001">
 
-        </div>
+        <div id="reader"></div>
+
+        <button type="submit">บันทึก / อัปเดตข้อมูล</button>
     </form>
 
-    <form method="get" action="/" class="search-box">
-        <input type="text" name="search" value="{{ search }}" placeholder="ค้นหา MNH / อุปกรณ์ / รุ่น / Serial / ชื่อเครื่อง">
+    <form method="get" action="/">
+        <input type="text" name="search" value="{{ search }}" placeholder="ค้นหา MNH / รุ่น / Serial / ชื่อเครื่อง">
         <button type="submit">ค้นหา</button>
     </form>
 
     <table>
         <thead>
             <tr>
-                <th>#</th>
                 <th>MNH</th>
                 <th>อุปกรณ์</th>
                 <th>รุ่น</th>
-                <th>Serial Number</th>
+                <th>Serial</th>
                 <th>ชื่อเครื่อง</th>
-                <th>วันที่บันทึก</th>
             </tr>
         </thead>
         <tbody>
             {% for row in rows %}
             <tr>
-                <td>{{ row.id }}</td>
                 <td>{{ row.mnh }}</td>
                 <td>{{ row.device_type }}</td>
                 <td>{{ row.model }}</td>
                 <td>{{ row.serial_number }}</td>
                 <td>{{ row.computer_name }}</td>
-                <td>{{ row.created_at }}</td>
-            </tr>
-            {% else %}
-            <tr>
-                <td colspan="7" style="text-align:center;">ไม่พบข้อมูล</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -223,7 +180,12 @@
 <script>
     const mnhInput = document.getElementById("mnh");
     const deviceType = document.getElementById("device_type");
+    const modelInput = document.getElementById("model");
     const serialInput = document.getElementById("serial_number");
+    const computerNameInput = document.getElementById("computer_name");
+    const statusBox = document.getElementById("statusBox");
+
+    let scanner = null;
 
     function syncSerialNumber() {
         if (deviceType.value === "PC") {
@@ -234,6 +196,73 @@
         }
     }
 
+    async function loadDeviceByMNH() {
+        const mnh = mnhInput.value.trim();
+
+        if (!mnh) return;
+
+        const res = await fetch(`/api/device/${encodeURIComponent(mnh)}`);
+        const json = await res.json();
+
+        statusBox.style.display = "block";
+
+        if (json.found) {
+            const d = json.data;
+
+            deviceType.value = d.device_type || "";
+            modelInput.value = d.model || "";
+            serialInput.value = d.serial_number || "";
+            computerNameInput.value = d.computer_name || "";
+
+            statusBox.className = "status found";
+            statusBox.innerText = "พบข้อมูลเดิม ระบบดึงข้อมูลมาให้แก้ไขแล้ว";
+        } else {
+            deviceType.value = "";
+            modelInput.value = "";
+            serialInput.value = "";
+            computerNameInput.value = "";
+
+            statusBox.className = "status new";
+            statusBox.innerText = "ไม่พบข้อมูลเดิม สามารถเพิ่มข้อมูลใหม่ได้";
+        }
+
+        syncSerialNumber();
+    }
+
+    async function startScan(inputId) {
+        const reader = document.getElementById("reader");
+        reader.style.display = "block";
+
+        if (scanner) {
+            await scanner.stop().catch(() => {});
+            scanner = null;
+        }
+
+        scanner = new Html5Qrcode("reader");
+
+        scanner.start(
+            { facingMode: "environment" },
+            {
+                fps: 10,
+                qrbox: 250
+            },
+            async function(decodedText) {
+                document.getElementById(inputId).value = decodedText;
+
+                await scanner.stop();
+                reader.style.display = "none";
+
+                if (inputId === "mnh") {
+                    await loadDeviceByMNH();
+                }
+
+                syncSerialNumber();
+            }
+        );
+    }
+
+    mnhInput.addEventListener("change", loadDeviceByMNH);
+    mnhInput.addEventListener("blur", loadDeviceByMNH);
     mnhInput.addEventListener("input", syncSerialNumber);
     deviceType.addEventListener("change", syncSerialNumber);
 </script>
