@@ -5,15 +5,10 @@
     <title>ระบบตรวจเช็คอุปกรณ์ IT</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <script src="https://unpkg.com/html5-qrcode"></script>
-
     <style>
         :root {
             --primary: #2563eb;
             --primary-dark: #1d4ed8;
-            --success: #16a34a;
-            --warning: #f59e0b;
-            --danger: #ef4444;
             --bg: #eef4ff;
             --card: #ffffff;
             --text: #0f172a;
@@ -69,8 +64,7 @@
         }
 
         .card {
-            background: rgba(255,255,255,.92);
-            backdrop-filter: blur(8px);
+            background: rgba(255,255,255,.94);
             border: 1px solid rgba(219, 227, 240, .9);
             border-radius: 22px;
             box-shadow: 0 12px 35px rgba(15, 23, 42, .08);
@@ -105,11 +99,6 @@
             font-weight: 700;
             margin: 14px 0 7px;
             font-size: 14px;
-        }
-
-        .input-group {
-            display: flex;
-            gap: 8px;
         }
 
         input, select {
@@ -151,12 +140,6 @@
             box-shadow: 0 10px 20px rgba(37, 99, 235, .25);
         }
 
-        .btn-scan {
-            background: linear-gradient(135deg, #16a34a, #22c55e);
-            color: white;
-            min-width: 92px;
-        }
-
         .btn-search {
             background: #0f172a;
             color: white;
@@ -168,6 +151,14 @@
             color: #334155;
             width: 100%;
             margin-top: 8px;
+        }
+
+        .btn-edit {
+            background: #f59e0b;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 10px;
+            font-size: 13px;
         }
 
         .hint {
@@ -197,20 +188,6 @@
             border: 1px solid #fde68a;
         }
 
-        #readerWrap {
-            display: none;
-            margin-top: 15px;
-            padding: 12px;
-            background: #0f172a;
-            border-radius: 18px;
-        }
-
-        #reader {
-            width: 100%;
-            overflow: hidden;
-            border-radius: 14px;
-        }
-
         .search-row {
             display: flex;
             gap: 8px;
@@ -226,7 +203,7 @@
 
         table {
             width: 100%;
-            min-width: 760px;
+            min-width: 840px;
             border-collapse: collapse;
             background: white;
         }
@@ -296,11 +273,10 @@
                 border-radius: 18px;
             }
 
-            .input-group {
+            .search-row {
                 flex-direction: column;
             }
 
-            .btn-scan,
             .btn-search {
                 width: 100%;
             }
@@ -317,7 +293,7 @@
 
     <section class="hero">
         <h1>ระบบตรวจเช็คอุปกรณ์ IT</h1>
-        <p>สแกน QR Code ผ่านมือถือ เพิ่ม/แก้ไขข้อมูลอุปกรณ์ และตรวจสอบรายการได้ทันที</p>
+        <p>เพิ่ม แก้ไข และตรวจสอบข้อมูลอุปกรณ์ IT ได้ง่ายผ่านมือถือและคอมพิวเตอร์</p>
     </section>
 
     <div class="layout">
@@ -325,18 +301,17 @@
         <div class="card">
             <div class="card-header">
                 <h2>บันทึก / อัปเดตอุปกรณ์</h2>
-                <span>กรอก MNH หรือกดสแกน หากมีข้อมูลเดิมระบบจะดึงมาให้แก้ไข</span>
+                <span>กรอก MNH หากมีข้อมูลเดิมระบบจะดึงมาให้แก้ไข</span>
             </div>
 
             <div class="card-body">
-                <form method="post" action="/save">
+                <form method="post" action="/save" id="deviceForm">
 
                     <label>MNH</label>
-                    <div class="input-group">
-                        <input type="text" name="mnh" id="mnh" required placeholder="เช่น MNH001">
-                        <button type="button" class="btn-scan" onclick="startScan('mnh')">สแกน</button>
+                    <input type="text" name="mnh" id="mnh" required placeholder="เช่น IT-03 หรือ MNA-00020">
+                    <div class="hint">
+                        หากวาง URL เช่น https://www.dsmetsmart.com/dsmet_hos/test_barcode.php?id=MNA-00020 ระบบจะตัดให้เหลือ MNA-00020 อัตโนมัติ
                     </div>
-                    <div class="hint">รองรับ QR Code / Barcode / การพิมพ์ข้อความ</div>
 
                     <div id="statusBox" class="status"></div>
 
@@ -362,18 +337,11 @@
                     </datalist>
 
                     <label>Serial Number</label>
-                    <div class="input-group">
-                        <input type="text" name="serial_number" id="serial_number" placeholder="สแกนหรือกรอก Serial Number">
-                        <button type="button" class="btn-scan" onclick="startScan('serial_number')">สแกน</button>
-                    </div>
+                    <input type="text" name="serial_number" id="serial_number" placeholder="กรอก Serial Number">
                     <div class="hint">ถ้าเลือก PC ระบบจะกำหนด Serial Number = MNH ให้อัตโนมัติ</div>
 
                     <label>ชื่อเครื่อง</label>
                     <input type="text" name="computer_name" id="computer_name" placeholder="เช่น MNH-OPD-001">
-
-                    <div id="readerWrap">
-                        <div id="reader"></div>
-                    </div>
 
                     <button type="submit" class="btn-primary">บันทึก / อัปเดตข้อมูล</button>
                     <button type="button" class="btn-clear" onclick="clearForm()">ล้างฟอร์ม</button>
@@ -385,12 +353,12 @@
         <div class="card">
             <div class="card-header">
                 <h2>รายการอุปกรณ์</h2>
-                <span>ค้นหาจาก MNH / รุ่น / Serial Number / ชื่อเครื่อง</span>
+                <span>เรียงตามรหัส MNH เช่น IT-03, MNA-00020</span>
             </div>
 
             <div class="card-body">
                 <form method="get" action="/" class="search-row">
-                    <input type="text" name="search" value="{{ search }}" placeholder="ค้นหาอุปกรณ์...">
+                    <input type="text" name="search" value="{{ search }}" placeholder="ค้นหา MNH / รุ่น / Serial / ชื่อเครื่อง">
                     <button type="submit" class="btn-search">ค้นหา</button>
                 </form>
 
@@ -403,6 +371,7 @@
                                 <th>รุ่น</th>
                                 <th>Serial</th>
                                 <th>ชื่อเครื่อง</th>
+                                <th>จัดการ</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -413,10 +382,18 @@
                                 <td>{{ row.model or '-' }}</td>
                                 <td>{{ row.serial_number or '-' }}</td>
                                 <td>{{ row.computer_name or '-' }}</td>
+                                <td>
+                                    <button
+                                        type="button"
+                                        class="btn-edit"
+                                        onclick='editDevice({{ row|tojson }})'>
+                                        แก้ไข
+                                    </button>
+                                </td>
                             </tr>
                             {% else %}
                             <tr>
-                                <td colspan="5" class="empty">ไม่พบข้อมูลอุปกรณ์</td>
+                                <td colspan="6" class="empty">ไม่พบข้อมูลอุปกรณ์</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -436,11 +413,32 @@
     const serialInput = document.getElementById("serial_number");
     const computerNameInput = document.getElementById("computer_name");
     const statusBox = document.getElementById("statusBox");
-    const readerWrap = document.getElementById("readerWrap");
 
-    let scanner = null;
+    function cleanMNH(value) {
+        if (!value) return "";
+
+        value = value.trim();
+
+        const prefix = "https://www.dsmetsmart.com/dsmet_hos/test_barcode.php?id=";
+
+        if (value.toLowerCase().startsWith(prefix.toLowerCase())) {
+            value = value.substring(prefix.length);
+        }
+
+        value = value.toUpperCase().trim();
+
+        const regex = /^[A-Z0-9\-]+$/;
+
+        if (!regex.test(value)) {
+            return "";
+        }
+
+        return value;
+    }
 
     function syncSerialNumber() {
+        mnhInput.value = cleanMNH(mnhInput.value);
+
         if (deviceType.value === "PC") {
             serialInput.value = mnhInput.value;
             serialInput.readOnly = true;
@@ -450,9 +448,15 @@
     }
 
     async function loadDeviceByMNH() {
-        const mnh = mnhInput.value.trim();
+        const mnh = cleanMNH(mnhInput.value);
+        mnhInput.value = mnh;
 
-        if (!mnh) return;
+        if (!mnh) {
+            statusBox.style.display = "block";
+            statusBox.className = "status new";
+            statusBox.innerText = "MNH ไม่ถูกต้อง หรือเป็นข้อมูลที่ไม่ต้องการ ระบบล้างค่าออกแล้ว";
+            return;
+        }
 
         try {
             const res = await fetch(`/api/device/${encodeURIComponent(mnh)}`);
@@ -488,58 +492,34 @@
         }
     }
 
-    async function startScan(inputId) {
-        readerWrap.style.display = "block";
+    function editDevice(row) {
+        mnhInput.value = row.mnh || "";
+        deviceType.value = row.device_type || "";
+        modelInput.value = row.model || "";
+        serialInput.value = row.serial_number || "";
+        computerNameInput.value = row.computer_name || "";
 
-        if (scanner) {
-            await scanner.stop().catch(() => {});
-            scanner = null;
-        }
+        statusBox.style.display = "block";
+        statusBox.className = "status found";
+        statusBox.innerText = "กำลังแก้ไขข้อมูลเดิม";
 
-        scanner = new Html5Qrcode("reader");
+        syncSerialNumber();
 
-        scanner.start(
-            { facingMode: "environment" },
-            {
-                fps: 10,
-                qrbox: {
-                    width: 240,
-                    height: 240
-                }
-            },
-            async function(decodedText) {
-                document.getElementById(inputId).value = decodedText;
-
-                await scanner.stop();
-                readerWrap.style.display = "none";
-
-                if (inputId === "mnh") {
-                    await loadDeviceByMNH();
-                }
-
-                syncSerialNumber();
-            }
-        ).catch(function(error) {
-            alert("ไม่สามารถเปิดกล้องได้ กรุณาอนุญาตการใช้งานกล้องบนมือถือ");
-            readerWrap.style.display = "none";
+        window.scrollTo({
+            top: 0,
+            behavior: "smooth"
         });
     }
 
-    async function clearForm() {
-        if (scanner) {
-            await scanner.stop().catch(() => {});
-            scanner = null;
-        }
-
-        document.querySelector("form").reset();
+    function clearForm() {
+        document.getElementById("deviceForm").reset();
         serialInput.readOnly = false;
         statusBox.style.display = "none";
-        readerWrap.style.display = "none";
         mnhInput.focus();
     }
 
-    mnhInput.addEventListener("change", loadDeviceByMNH);
     mnhInput.addEventListener("blur", loadDeviceByMNH);
+    mnhInput.addEventListener("change", loadDeviceByMNH);
     mnhInput.addEventListener("input", syncSerialNumber);
     deviceType.addEventListener("change", syncSerialNumber);
 </script>
