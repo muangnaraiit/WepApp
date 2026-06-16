@@ -35,9 +35,9 @@ def clean_mnh(value):
 
 ORDER_SQL = """
     ORDER BY
-        REGEXP_REPLACE(UPPER(mnh), '[0-9]', '', 'g'),
-        NULLIF(REGEXP_REPLACE(mnh, '[^0-9]', '', 'g'), '')::INTEGER,
-        mnh
+        computer_name ASC NULLS LAST,
+        device_type ASC NULLS LAST,
+        serial_number ASC NULLS LAST
 """
 
 
@@ -157,7 +157,7 @@ def save():
     cur.close()
     conn.close()
 
-    return redirect(f"/?search={mnh}")
+    return redirect("/")
 
 
 @app.route("/delete/<int:id>", methods=["POST"])
