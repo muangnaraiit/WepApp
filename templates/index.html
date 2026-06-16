@@ -8,173 +8,425 @@
     <script src="https://unpkg.com/html5-qrcode"></script>
 
     <style>
-        body {
-            font-family: Tahoma, sans-serif;
-            background: #eef3fb;
-            margin: 0;
-            padding: 12px;
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --success: #16a34a;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg: #eef4ff;
+            --card: #ffffff;
+            --text: #0f172a;
+            --muted: #64748b;
+            --border: #dbe3f0;
         }
 
-        .container {
-            max-width: 900px;
-            margin: auto;
-            background: white;
-            padding: 18px;
-            border-radius: 16px;
-        }
-
-        h2 {
-            text-align: center;
-            color: #1d4ed8;
-        }
-
-        label {
-            font-weight: bold;
-            display: block;
-            margin-top: 12px;
-        }
-
-        input, select, button {
-            width: 100%;
-            padding: 14px;
-            margin-top: 6px;
-            border-radius: 10px;
-            border: 1px solid #cbd5e1;
-            font-size: 16px;
+        * {
             box-sizing: border-box;
         }
 
-        button {
-            background: #2563eb;
-            color: white;
-            border: none;
-            font-weight: bold;
+        body {
+            margin: 0;
+            font-family: Tahoma, Arial, sans-serif;
+            background:
+                radial-gradient(circle at top left, #dbeafe 0, transparent 35%),
+                linear-gradient(135deg, #eef4ff, #f8fbff);
+            color: var(--text);
+            min-height: 100vh;
         }
 
-        .scan-btn {
-            background: #16a34a;
+        .app {
+            max-width: 1180px;
+            margin: auto;
+            padding: 18px;
+        }
+
+        .hero {
+            background: linear-gradient(135deg, #1d4ed8, #2563eb, #38bdf8);
+            color: white;
+            border-radius: 24px;
+            padding: 26px 24px;
+            box-shadow: 0 18px 40px rgba(37, 99, 235, .28);
+            margin-bottom: 18px;
+        }
+
+        .hero h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+
+        .hero p {
+            margin: 8px 0 0;
+            opacity: .92;
+            font-size: 15px;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 420px 1fr;
+            gap: 18px;
+            align-items: start;
+        }
+
+        .card {
+            background: rgba(255,255,255,.92);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(219, 227, 240, .9);
+            border-radius: 22px;
+            box-shadow: 0 12px 35px rgba(15, 23, 42, .08);
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 18px 20px;
+            border-bottom: 1px solid var(--border);
+            background: #f8fbff;
+        }
+
+        .card-header h2 {
+            margin: 0;
+            font-size: 19px;
+            color: var(--primary-dark);
+        }
+
+        .card-header span {
+            display: block;
+            margin-top: 4px;
+            font-size: 13px;
+            color: var(--muted);
+        }
+
+        .card-body {
+            padding: 18px 20px 20px;
+        }
+
+        label {
+            display: block;
+            font-weight: 700;
+            margin: 14px 0 7px;
+            font-size: 14px;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 13px 14px;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            outline: none;
+            font-size: 16px;
+            background: #ffffff;
+            transition: .18s;
+        }
+
+        input:focus, select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, .12);
+        }
+
+        button {
+            border: none;
+            border-radius: 14px;
+            padding: 13px 16px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: .18s;
+            white-space: nowrap;
+        }
+
+        button:hover {
+            transform: translateY(-1px);
+        }
+
+        .btn-primary {
+            width: 100%;
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            color: white;
+            margin-top: 18px;
+            box-shadow: 0 10px 20px rgba(37, 99, 235, .25);
+        }
+
+        .btn-scan {
+            background: linear-gradient(135deg, #16a34a, #22c55e);
+            color: white;
+            min-width: 92px;
+        }
+
+        .btn-search {
+            background: #0f172a;
+            color: white;
+            min-width: 100px;
+        }
+
+        .btn-clear {
+            background: #e2e8f0;
+            color: #334155;
+            width: 100%;
+            margin-top: 8px;
+        }
+
+        .hint {
+            font-size: 12px;
+            color: var(--muted);
+            margin-top: 6px;
         }
 
         .status {
-            margin-top: 10px;
-            padding: 10px;
-            border-radius: 10px;
             display: none;
+            margin-top: 12px;
+            padding: 12px 14px;
+            border-radius: 14px;
+            font-size: 14px;
+            font-weight: 700;
         }
 
         .found {
             background: #dcfce7;
             color: #166534;
+            border: 1px solid #bbf7d0;
         }
 
         .new {
             background: #fef9c3;
             color: #854d0e;
+            border: 1px solid #fde68a;
+        }
+
+        #readerWrap {
+            display: none;
+            margin-top: 15px;
+            padding: 12px;
+            background: #0f172a;
+            border-radius: 18px;
         }
 
         #reader {
-            display: none;
-            margin-top: 15px;
+            width: 100%;
+            overflow: hidden;
+            border-radius: 14px;
+        }
+
+        .search-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+
+        .table-wrap {
+            width: 100%;
+            overflow-x: auto;
+            border-radius: 16px;
+            border: 1px solid var(--border);
         }
 
         table {
             width: 100%;
+            min-width: 760px;
             border-collapse: collapse;
-            margin-top: 25px;
-            font-size: 13px;
-        }
-
-        th, td {
-            border: 1px solid #e2e8f0;
-            padding: 8px;
+            background: white;
         }
 
         th {
-            background: #2563eb;
-            color: white;
+            background: #eff6ff;
+            color: #1d4ed8;
+            font-size: 13px;
+            text-align: left;
+            padding: 13px;
+            border-bottom: 1px solid var(--border);
         }
 
-        @media (max-width: 600px) {
-            table {
-                display: block;
-                overflow-x: auto;
+        td {
+            padding: 13px;
+            border-bottom: 1px solid #eef2f7;
+            font-size: 14px;
+            vertical-align: top;
+        }
+
+        tr:hover td {
+            background: #f8fbff;
+        }
+
+        .badge {
+            display: inline-block;
+            background: #dbeafe;
+            color: #1d4ed8;
+            padding: 5px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .mnh {
+            font-weight: 800;
+            color: #0f172a;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 26px;
+            color: var(--muted);
+        }
+
+        @media (max-width: 900px) {
+            .layout {
+                grid-template-columns: 1fr;
+            }
+
+            .hero {
+                border-radius: 0 0 24px 24px;
+                margin: -18px -18px 18px;
+            }
+        }
+
+        @media (max-width: 520px) {
+            .app {
+                padding: 12px;
+            }
+
+            .hero h1 {
+                font-size: 23px;
+            }
+
+            .card {
+                border-radius: 18px;
+            }
+
+            .input-group {
+                flex-direction: column;
+            }
+
+            .btn-scan,
+            .btn-search {
+                width: 100%;
+            }
+
+            input, select, button {
+                font-size: 16px;
             }
         }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>ระบบตรวจเช็คอุปกรณ์ IT</h2>
+<div class="app">
 
-    <form method="post" action="/save">
+    <section class="hero">
+        <h1>ระบบตรวจเช็คอุปกรณ์ IT</h1>
+        <p>สแกน QR Code ผ่านมือถือ เพิ่ม/แก้ไขข้อมูลอุปกรณ์ และตรวจสอบรายการได้ทันที</p>
+    </section>
 
-        <label>MNH</label>
-        <input type="text" name="mnh" id="mnh" required placeholder="สแกนหรือกรอก MNH">
-        <button type="button" class="scan-btn" onclick="startScan('mnh')">กดสแกน MNH</button>
+    <div class="layout">
 
-        <div id="statusBox" class="status"></div>
+        <div class="card">
+            <div class="card-header">
+                <h2>บันทึก / อัปเดตอุปกรณ์</h2>
+                <span>กรอก MNH หรือกดสแกน หากมีข้อมูลเดิมระบบจะดึงมาให้แก้ไข</span>
+            </div>
 
-        <label>อุปกรณ์</label>
-        <select name="device_type" id="device_type" required>
-            <option value="">-- เลือกอุปกรณ์ --</option>
-            <option value="AIO">AIO</option>
-            <option value="PC">PC</option>
-            <option value="Monitor">Monitor</option>
-            <option value="Printer">Printer</option>
-            <option value="Scanner">Scanner</option>
-            <option value="UPS">UPS</option>
-            <option value="Notebook">Notebook</option>
-            <option value="Projector">Projector</option>
-        </select>
+            <div class="card-body">
+                <form method="post" action="/save">
 
-        <label>รุ่น</label>
-        <input type="text" name="model" id="model" list="model_list" placeholder="กรอกรุ่น หรือเลือกจากข้อมูลเดิม">
-        <datalist id="model_list">
-            {% for m in models %}
-                <option value="{{ m.model }}">
-            {% endfor %}
-        </datalist>
+                    <label>MNH</label>
+                    <div class="input-group">
+                        <input type="text" name="mnh" id="mnh" required placeholder="เช่น MNH001">
+                        <button type="button" class="btn-scan" onclick="startScan('mnh')">สแกน</button>
+                    </div>
+                    <div class="hint">รองรับ QR Code / Barcode / การพิมพ์ข้อความ</div>
 
-        <label>Serial Number</label>
-        <input type="text" name="serial_number" id="serial_number" placeholder="สแกนหรือกรอก Serial Number">
-        <button type="button" class="scan-btn" onclick="startScan('serial_number')">กดสแกน Serial Number</button>
+                    <div id="statusBox" class="status"></div>
 
-        <label>ชื่อเครื่อง</label>
-        <input type="text" name="computer_name" id="computer_name" placeholder="เช่น MNH-OPD-001">
+                    <label>ประเภทอุปกรณ์</label>
+                    <select name="device_type" id="device_type" required>
+                        <option value="">-- เลือกอุปกรณ์ --</option>
+                        <option value="AIO">AIO</option>
+                        <option value="PC">PC</option>
+                        <option value="Monitor">Monitor</option>
+                        <option value="Printer">Printer</option>
+                        <option value="Scanner">Scanner</option>
+                        <option value="UPS">UPS</option>
+                        <option value="Notebook">Notebook</option>
+                        <option value="Projector">Projector</option>
+                    </select>
 
-        <div id="reader"></div>
+                    <label>รุ่นอุปกรณ์</label>
+                    <input type="text" name="model" id="model" list="model_list" placeholder="เช่น Dell OptiPlex / HP LaserJet">
+                    <datalist id="model_list">
+                        {% for m in models %}
+                            <option value="{{ m.model }}">
+                        {% endfor %}
+                    </datalist>
 
-        <button type="submit">บันทึก / อัปเดตข้อมูล</button>
-    </form>
+                    <label>Serial Number</label>
+                    <div class="input-group">
+                        <input type="text" name="serial_number" id="serial_number" placeholder="สแกนหรือกรอก Serial Number">
+                        <button type="button" class="btn-scan" onclick="startScan('serial_number')">สแกน</button>
+                    </div>
+                    <div class="hint">ถ้าเลือก PC ระบบจะกำหนด Serial Number = MNH ให้อัตโนมัติ</div>
 
-    <form method="get" action="/">
-        <input type="text" name="search" value="{{ search }}" placeholder="ค้นหา MNH / รุ่น / Serial / ชื่อเครื่อง">
-        <button type="submit">ค้นหา</button>
-    </form>
+                    <label>ชื่อเครื่อง</label>
+                    <input type="text" name="computer_name" id="computer_name" placeholder="เช่น MNH-OPD-001">
 
-    <table>
-        <thead>
-            <tr>
-                <th>MNH</th>
-                <th>อุปกรณ์</th>
-                <th>รุ่น</th>
-                <th>Serial</th>
-                <th>ชื่อเครื่อง</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for row in rows %}
-            <tr>
-                <td>{{ row.mnh }}</td>
-                <td>{{ row.device_type }}</td>
-                <td>{{ row.model }}</td>
-                <td>{{ row.serial_number }}</td>
-                <td>{{ row.computer_name }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+                    <div id="readerWrap">
+                        <div id="reader"></div>
+                    </div>
+
+                    <button type="submit" class="btn-primary">บันทึก / อัปเดตข้อมูล</button>
+                    <button type="button" class="btn-clear" onclick="clearForm()">ล้างฟอร์ม</button>
+
+                </form>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h2>รายการอุปกรณ์</h2>
+                <span>ค้นหาจาก MNH / รุ่น / Serial Number / ชื่อเครื่อง</span>
+            </div>
+
+            <div class="card-body">
+                <form method="get" action="/" class="search-row">
+                    <input type="text" name="search" value="{{ search }}" placeholder="ค้นหาอุปกรณ์...">
+                    <button type="submit" class="btn-search">ค้นหา</button>
+                </form>
+
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>MNH</th>
+                                <th>ประเภท</th>
+                                <th>รุ่น</th>
+                                <th>Serial</th>
+                                <th>ชื่อเครื่อง</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in rows %}
+                            <tr>
+                                <td class="mnh">{{ row.mnh }}</td>
+                                <td><span class="badge">{{ row.device_type }}</span></td>
+                                <td>{{ row.model or '-' }}</td>
+                                <td>{{ row.serial_number or '-' }}</td>
+                                <td>{{ row.computer_name or '-' }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="empty">ไม่พบข้อมูลอุปกรณ์</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
 </div>
 
 <script>
@@ -184,6 +436,7 @@
     const serialInput = document.getElementById("serial_number");
     const computerNameInput = document.getElementById("computer_name");
     const statusBox = document.getElementById("statusBox");
+    const readerWrap = document.getElementById("readerWrap");
 
     let scanner = null;
 
@@ -201,37 +454,42 @@
 
         if (!mnh) return;
 
-        const res = await fetch(`/api/device/${encodeURIComponent(mnh)}`);
-        const json = await res.json();
+        try {
+            const res = await fetch(`/api/device/${encodeURIComponent(mnh)}`);
+            const json = await res.json();
 
-        statusBox.style.display = "block";
+            statusBox.style.display = "block";
 
-        if (json.found) {
-            const d = json.data;
+            if (json.found) {
+                const d = json.data;
 
-            deviceType.value = d.device_type || "";
-            modelInput.value = d.model || "";
-            serialInput.value = d.serial_number || "";
-            computerNameInput.value = d.computer_name || "";
+                deviceType.value = d.device_type || "";
+                modelInput.value = d.model || "";
+                serialInput.value = d.serial_number || "";
+                computerNameInput.value = d.computer_name || "";
 
-            statusBox.className = "status found";
-            statusBox.innerText = "พบข้อมูลเดิม ระบบดึงข้อมูลมาให้แก้ไขแล้ว";
-        } else {
-            deviceType.value = "";
-            modelInput.value = "";
-            serialInput.value = "";
-            computerNameInput.value = "";
+                statusBox.className = "status found";
+                statusBox.innerText = "พบข้อมูลเดิม ดึงข้อมูลมาให้แก้ไขแล้ว";
+            } else {
+                deviceType.value = "";
+                modelInput.value = "";
+                serialInput.value = "";
+                computerNameInput.value = "";
 
+                statusBox.className = "status new";
+                statusBox.innerText = "ไม่พบข้อมูลเดิม สามารถเพิ่มข้อมูลใหม่ได้";
+            }
+
+            syncSerialNumber();
+        } catch (e) {
+            statusBox.style.display = "block";
             statusBox.className = "status new";
-            statusBox.innerText = "ไม่พบข้อมูลเดิม สามารถเพิ่มข้อมูลใหม่ได้";
+            statusBox.innerText = "ไม่สามารถดึงข้อมูลได้ กรุณาตรวจสอบการเชื่อมต่อ";
         }
-
-        syncSerialNumber();
     }
 
     async function startScan(inputId) {
-        const reader = document.getElementById("reader");
-        reader.style.display = "block";
+        readerWrap.style.display = "block";
 
         if (scanner) {
             await scanner.stop().catch(() => {});
@@ -244,13 +502,16 @@
             { facingMode: "environment" },
             {
                 fps: 10,
-                qrbox: 250
+                qrbox: {
+                    width: 240,
+                    height: 240
+                }
             },
             async function(decodedText) {
                 document.getElementById(inputId).value = decodedText;
 
                 await scanner.stop();
-                reader.style.display = "none";
+                readerWrap.style.display = "none";
 
                 if (inputId === "mnh") {
                     await loadDeviceByMNH();
@@ -258,7 +519,23 @@
 
                 syncSerialNumber();
             }
-        );
+        ).catch(function(error) {
+            alert("ไม่สามารถเปิดกล้องได้ กรุณาอนุญาตการใช้งานกล้องบนมือถือ");
+            readerWrap.style.display = "none";
+        });
+    }
+
+    async function clearForm() {
+        if (scanner) {
+            await scanner.stop().catch(() => {});
+            scanner = null;
+        }
+
+        document.querySelector("form").reset();
+        serialInput.readOnly = false;
+        statusBox.style.display = "none";
+        readerWrap.style.display = "none";
+        mnhInput.focus();
     }
 
     mnhInput.addEventListener("change", loadDeviceByMNH);
