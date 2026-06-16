@@ -1,261 +1,242 @@
 <!DOCTYPE html>
 <html lang="th">
-
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <title>ระบบตรวจเช็คอุปกรณ์ IT</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<title>BeautyVerse</title>
+    <style>
+        body {
+            font-family: Tahoma, sans-serif;
+            background: #eef3fb;
+            padding: 20px;
+        }
 
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+        .container {
+            max-width: 1200px;
+            margin: auto;
+            background: white;
+            padding: 25px;
+            border-radius: 18px;
+            box-shadow: 0 5px 20px rgba(0,0,0,.08);
+        }
 
-<link rel="stylesheet" href="css/style.css">
+        h1 {
+            text-align: center;
+            color: #1d4ed8;
+        }
 
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+        label {
+            display: block;
+            font-weight: bold;
+            margin-top: 12px;
+        }
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+        input, select, button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 6px;
+            border-radius: 10px;
+            border: 1px solid #cbd5e1;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
 
+        button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .full {
+            grid-column: span 2;
+        }
+
+        .note {
+            color: #64748b;
+            font-size: 13px;
+            margin-top: 4px;
+        }
+
+        .search-box {
+            margin-top: 25px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .search-box input {
+            margin-top: 0;
+        }
+
+        .search-box button {
+            width: 160px;
+            margin-top: 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 25px;
+        }
+
+        th, td {
+            border: 1px solid #e2e8f0;
+            padding: 10px;
+            font-size: 14px;
+            text-align: left;
+        }
+
+        th {
+            background: #2563eb;
+            color: white;
+        }
+
+        tr:nth-child(even) {
+            background: #f8fafc;
+        }
+
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .full {
+                grid-column: span 1;
+            }
+
+            .search-box {
+                flex-direction: column;
+            }
+
+            .search-box button {
+                width: 100%;
+            }
+        }
+    </style>
 </head>
-
 <body>
 
-<div class="bg-animation"></div>
-
-<div class="floating floating1"></div>
-<div class="floating floating2"></div>
-<div class="floating floating3"></div>
-
-<nav class="navbar navbar-expand-lg glass-nav">
-
 <div class="container">
+    <h1>ระบบตรวจเช็คอุปกรณ์ IT</h1>
 
-<a class="navbar-brand logo" href="#">
-BeautyVerse
-</a>
+    <form method="post" action="/save">
+        <div class="grid">
 
-<button class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#menu">
-<span class="navbar-toggler-icon"></span>
-</button>
+            <div>
+                <label>MNH</label>
+                <input type="text" name="mnh" id="mnh" placeholder="สแกน QR Code หรือกรอก MNH" required autofocus>
+                <div class="note">รองรับเครื่องสแกน QR Code / Barcode / ข้อความ</div>
+            </div>
 
-<div class="collapse navbar-collapse" id="menu">
+            <div>
+                <label>อุปกรณ์</label>
+                <select name="device_type" id="device_type" required>
+                    <option value="">-- เลือกประเภทอุปกรณ์ --</option>
+                    <option value="AIO">AIO</option>
+                    <option value="PC">PC</option>
+                    <option value="Monitor">Monitor</option>
+                    <option value="Printer">Printer</option>
+                    <option value="Scanner">Scanner</option>
+                    <option value="UPS">UPS</option>
+                    <option value="Notebook">Notebook</option>
+                    <option value="Projector">Projector</option>
+                </select>
+            </div>
 
-<ul class="navbar-nav ms-auto">
+            <div>
+                <label>รุ่น</label>
+                <input type="text" name="model" list="model_list" placeholder="กรอกรุ่น หรือเลือกจากข้อมูลเดิม">
+                <datalist id="model_list">
+                    {% for m in models %}
+                        <option value="{{ m.model }}">
+                    {% endfor %}
+                </datalist>
+            </div>
 
-<li class="nav-item">
-<a class="nav-link" href="#">หน้าแรก</a>
-</li>
+            <div>
+                <label>Serial Number</label>
+                <input type="text" name="serial_number" id="serial_number" placeholder="สแกน QR Code หรือกรอก Serial Number">
+                <div class="note">ถ้าเลือก PC ระบบจะใส่ Serial Number = MNH ให้อัตโนมัติ</div>
+            </div>
 
-<li class="nav-item">
-<a class="nav-link" href="#">เครื่องสำอาง</a>
-</li>
+            <div class="full">
+                <label>ชื่อเครื่อง</label>
+                <input type="text" name="computer_name" placeholder="เช่น MNH-OPD-001">
+            </div>
 
-<li class="nav-item">
-<a class="nav-link" href="#">สกินแคร์</a>
-</li>
+            <div class="full">
+                <button type="submit">บันทึกข้อมูล</button>
+            </div>
 
-<li class="nav-item">
-<a class="nav-link" href="#">รีวิว</a>
-</li>
+        </div>
+    </form>
 
-</ul>
+    <form method="get" action="/" class="search-box">
+        <input type="text" name="search" value="{{ search }}" placeholder="ค้นหา MNH / อุปกรณ์ / รุ่น / Serial / ชื่อเครื่อง">
+        <button type="submit">ค้นหา</button>
+    </form>
 
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>MNH</th>
+                <th>อุปกรณ์</th>
+                <th>รุ่น</th>
+                <th>Serial Number</th>
+                <th>ชื่อเครื่อง</th>
+                <th>วันที่บันทึก</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rows %}
+            <tr>
+                <td>{{ row.id }}</td>
+                <td>{{ row.mnh }}</td>
+                <td>{{ row.device_type }}</td>
+                <td>{{ row.model }}</td>
+                <td>{{ row.serial_number }}</td>
+                <td>{{ row.computer_name }}</td>
+                <td>{{ row.created_at }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="7" style="text-align:center;">ไม่พบข้อมูล</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </div>
 
-</div>
-
-</nav>
-
-<section class="hero">
-
-<div class="container">
-
-<h1 class="hero-title">
-DISCOVER YOUR
-<span>BEAUTY</span>
-</h1>
-
-<p class="hero-subtitle">
-ค้นหาเครื่องสำอางที่เหมาะกับคุณที่สุด
-ด้วยระบบค้นหาอัจฉริยะ
-</p>
-
-<div class="search-box">
-
-<input
-type="text"
-placeholder="ค้นหาสินค้า, แบรนด์ หรือ SPF...">
-
-<button>
-<i class="fas fa-search"></i>
-</button>
-
-</div>
-
-</div>
-
-</section>
-
-<section class="container pb-5">
-
-<div class="row g-4">
-
-<div class="col-lg-3">
-
-<div class="glass-card filter-card">
-
-<h4>Filter</h4>
-
-<hr>
-
-<label>ประเภท</label>
-
-<select class="form-select">
-<option>ทั้งหมด</option>
-<option>กันแดด</option>
-<option>เซรั่ม</option>
-<option>ครีม</option>
-</select>
-
-<br>
-
-<label>ราคา</label>
-
-<input type="range" class="form-range">
-
-</div>
-
-</div>
-
-<div class="col-lg-9">
-
-<div class="row g-4">
-
-<div class="col-md-4">
-
-<div class="product-card">
-
-<div class="shine"></div>
-
-<img
-src="https://images.unsplash.com/photo-1625772452859-1c03d5bf1137?w=600"
-class="img-fluid">
-
-<div class="p-3">
-
-<span class="badge bg-danger">
-BEST SELLER
-</span>
-
-<h5>
-KA UV Shield
-</h5>
-
-<p>
-SPF50+ PA++++
-</p>
-
-<div class="price">
-฿199
-</div>
-
-<button class="btn btn-gradient w-100">
-ดูรายละเอียด
-</button>
-
-</div>
-
-</div>
-
-</div>
-
-<div class="col-md-4">
-
-<div class="product-card">
-
-<div class="shine"></div>
-
-<img
-src="https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=600"
-class="img-fluid">
-
-<div class="p-3">
-
-<span class="badge bg-primary">
-NEW
-</span>
-
-<h5>
-Vitamin Serum
-</h5>
-
-<p>
-Brightening Formula
-</p>
-
-<div class="price">
-฿399
-</div>
-
-<button class="btn btn-gradient w-100">
-ดูรายละเอียด
-</button>
-
-</div>
-
-</div>
-
-</div>
-
-<div class="col-md-4">
-
-<div class="product-card">
-
-<div class="shine"></div>
-
-<img
-src="https://images.unsplash.com/photo-1619451334792-150fd785ee74?w=600"
-class="img-fluid">
-
-<div class="p-3">
-
-<span class="badge bg-success">
-POPULAR
-</span>
-
-<h5>
-Night Cream
-</h5>
-
-<p>
-Hydration Care
-</p>
-
-<div class="price">
-฿599
-</div>
-
-<button class="btn btn-gradient w-100">
-ดูรายละเอียด
-</button>
-
-</div>
-
-</div>
-
-</div>
-
-</div>
-
-</div>
-
-</div>
-
-</section>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
-
-<script src="js/app.js"></script>
+<script>
+    const mnhInput = document.getElementById("mnh");
+    const deviceType = document.getElementById("device_type");
+    const serialInput = document.getElementById("serial_number");
+
+    function syncSerialNumber() {
+        if (deviceType.value === "PC") {
+            serialInput.value = mnhInput.value;
+            serialInput.readOnly = true;
+        } else {
+            serialInput.readOnly = false;
+        }
+    }
+
+    mnhInput.addEventListener("input", syncSerialNumber);
+    deviceType.addEventListener("change", syncSerialNumber);
+</script>
 
 </body>
 </html>
