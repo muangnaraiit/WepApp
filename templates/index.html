@@ -14,6 +14,9 @@
             --text: #0f172a;
             --muted: #64748b;
             --border: #dbe3f0;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --success: #16a34a;
         }
 
         * {
@@ -117,6 +120,12 @@
             box-shadow: 0 0 0 4px rgba(37, 99, 235, .12);
         }
 
+        input[readonly] {
+            background: #f1f5f9;
+            color: #475569;
+            cursor: not-allowed;
+        }
+
         button {
             border: none;
             border-radius: 14px;
@@ -154,11 +163,20 @@
         }
 
         .btn-edit {
-            background: #f59e0b;
+            background: var(--warning);
             color: white;
             padding: 8px 12px;
             border-radius: 10px;
             font-size: 13px;
+        }
+
+        .btn-delete {
+            background: var(--danger);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 10px;
+            font-size: 13px;
+            margin-left: 4px;
         }
 
         .hint {
@@ -203,7 +221,7 @@
 
         table {
             width: 100%;
-            min-width: 840px;
+            min-width: 900px;
             border-collapse: collapse;
             background: white;
         }
@@ -249,6 +267,17 @@
             color: var(--muted);
         }
 
+        .action-cell {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .delete-form {
+            display: inline;
+            margin: 0;
+        }
+
         @media (max-width: 900px) {
             .layout {
                 grid-template-columns: 1fr;
@@ -284,6 +313,17 @@
             input, select, button {
                 font-size: 16px;
             }
+
+            .action-cell {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .btn-edit,
+            .btn-delete {
+                width: 100%;
+                margin-left: 0;
+            }
         }
     </style>
 </head>
@@ -293,7 +333,7 @@
 
     <section class="hero">
         <h1>ระบบตรวจเช็คอุปกรณ์ IT</h1>
-        <p>เพิ่ม แก้ไข และตรวจสอบข้อมูลอุปกรณ์ IT ได้ง่ายผ่านมือถือและคอมพิวเตอร์</p>
+        <p>เพิ่ม แก้ไข ลบ และตรวจสอบข้อมูลอุปกรณ์ IT ได้ง่ายผ่านมือถือและคอมพิวเตอร์</p>
     </section>
 
     <div class="layout">
@@ -338,7 +378,7 @@
 
                     <label>Serial Number</label>
                     <input type="text" name="serial_number" id="serial_number" placeholder="กรอก Serial Number">
-                    <div class="hint">ถ้าเลือก PC ระบบจะกำหนด Serial Number = MNH ให้อัตโนมัติ</div>
+                    <div class="hint">ถ้าเลือก PC ระบบจะกำหนด รุ่นอุปกรณ์ = PC และ Serial Number = PC ให้อัตโนมัติ</div>
 
                     <label>ชื่อเครื่อง</label>
                     <input type="text" name="computer_name" id="computer_name" placeholder="เช่น MNH-OPD-001">
@@ -357,7 +397,7 @@
             </div>
 
             <div class="card-body">
-                <form method="get" action="/" class="search-row">
+                <form method="get" action="/" class="search-row" id="searchForm">
                     <input type="text" name="search" value="{{ search }}" placeholder="ค้นหา MNH / รุ่น / Serial / ชื่อเครื่อง">
                     <button type="submit" class="btn-search">ค้นหา</button>
                 </form>
@@ -383,12 +423,24 @@
                                 <td>{{ row.serial_number or '-' }}</td>
                                 <td>{{ row.computer_name or '-' }}</td>
                                 <td>
-                                    <button
-                                        type="button"
-                                        class="btn-edit"
-                                        onclick='editDevice({{ row|tojson }})'>
-                                        แก้ไข
-                                    </button>
+                                    <div class="action-cell">
+                                        <button
+                                            type="button"
+                                            class="btn-edit"
+                                            onclick='editDevice({{ row|tojson }})'>
+                                            แก้ไข
+                                        </button>
+
+                                        <form
+                                            method="post"
+                                            action="/delete/{{ row.id }}"
+                                            class="delete-form"
+                                            onsubmit="return confirm('ยืนยันการลบข้อมูล {{ row.mnh }} ?');">
+                                            <button type="submit" class="btn-delete">
+                                                ลบ
+                                            </button>
+                                        </form>
+                                    </div>
                                 </td>
                             </tr>
                             {% else %}
@@ -436,13 +488,16 @@
         return value;
     }
 
-    function syncSerialNumber() {
+    function syncPCFields() {
         mnhInput.value = cleanMNH(mnhInput.value);
 
         if (deviceType.value === "PC") {
-            serialInput.value = mnhInput.value;
+            modelInput.value = "PC";
+            serialInput.value = "PC";
+            modelInput.readOnly = true;
             serialInput.readOnly = true;
         } else {
+            modelInput.readOnly = false;
             serialInput.readOnly = false;
         }
     }
@@ -484,7 +539,7 @@
                 statusBox.innerText = "ไม่พบข้อมูลเดิม สามารถเพิ่มข้อมูลใหม่ได้";
             }
 
-            syncSerialNumber();
+            syncPCFields();
         } catch (e) {
             statusBox.style.display = "block";
             statusBox.className = "status new";
@@ -503,7 +558,7 @@
         statusBox.className = "status found";
         statusBox.innerText = "กำลังแก้ไขข้อมูลเดิม";
 
-        syncSerialNumber();
+        syncPCFields();
 
         window.scrollTo({
             top: 0,
@@ -513,15 +568,27 @@
 
     function clearForm() {
         document.getElementById("deviceForm").reset();
+        modelInput.readOnly = false;
         serialInput.readOnly = false;
         statusBox.style.display = "none";
         mnhInput.focus();
     }
 
+    document.addEventListener("keydown", function(e) {
+        if (e.key === "Enter") {
+            const tag = e.target.tagName.toLowerCase();
+
+            if (tag === "input" || tag === "select") {
+                e.preventDefault();
+                return false;
+            }
+        }
+    });
+
     mnhInput.addEventListener("blur", loadDeviceByMNH);
     mnhInput.addEventListener("change", loadDeviceByMNH);
-    mnhInput.addEventListener("input", syncSerialNumber);
-    deviceType.addEventListener("change", syncSerialNumber);
+    mnhInput.addEventListener("input", syncPCFields);
+    deviceType.addEventListener("change", syncPCFields);
 </script>
 
 </body>

@@ -22,7 +22,6 @@ def clean_mnh(value):
     value = unquote(str(value).strip())
 
     prefix = "https://www.dsmetsmart.com/dsmet_hos/test_barcode.php?id="
-
     if value.lower().startswith(prefix.lower()):
         value = value[len(prefix):]
 
@@ -34,19 +33,21 @@ def clean_mnh(value):
     return value
 
 
+ORDER_SQL = """
+    ORDER BY
+        REGEXP_REPLACE(UPPER(mnh), '[0-9]', '', 'g'),
+        NULLIF(REGEXP_REPLACE(mnh, '[^0-9]', '', 'g'), '')::INTEGER,
+        mnh
+"""
+
+
 @app.route("/")
 def home():
-    search = clean_mnh(request.args.get("search", "").strip()) or request.args.get("search", "").strip()
+    search_raw = request.args.get("search", "").strip()
+    search = clean_mnh(search_raw) or search_raw
 
     conn = get_db()
     cur = conn.cursor(cursor_factory=RealDictCursor)
-
-    order_sql = """
-        ORDER BY
-            REGEXP_REPLACE(UPPER(mnh), '[0-9]', '', 'g'),
-            NULLIF(REGEXP_REPLACE(mnh, '[^0-9]', '', 'g'), '')::INTEGER,
-            mnh
-    """
 
     if search:
         keyword = f"%{search}%"
@@ -58,13 +59,13 @@ def home():
                OR model ILIKE %s
                OR serial_number ILIKE %s
                OR computer_name ILIKE %s
-            {order_sql}
+            {ORDER_SQL}
         """, (keyword, keyword, keyword, keyword, keyword))
     else:
         cur.execute(f"""
             SELECT *
             FROM devices
-            {order_sql}
+            {ORDER_SQL}
         """)
 
     rows = cur.fetchall()
@@ -106,7 +107,7 @@ def api_device(mnh):
     conn.close()
 
     if row:
-        return jsonify({"found": True, "data": row})
+        return jsonify({"found": True, "data": dict(row)})
 
     return jsonify({"found": False})
 
@@ -123,7 +124,8 @@ def save():
         return "MNH ไม่ถูกต้อง กรุณากรอกใหม่", 400
 
     if device_type == "PC":
-        serial_number = mnh
+        model = "PC"
+        serial_number = "PC"
 
     conn = get_db()
     cur = conn.cursor()
@@ -156,6 +158,20 @@ def save():
     conn.close()
 
     return redirect(f"/?search={mnh}")
+
+
+@app.route("/delete/<int:id>", methods=["POST"])
+def delete_device(id):
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("DELETE FROM devices WHERE id = %s", (id,))
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    return redirect("/")
 
 
 if __name__ == "__main__":
