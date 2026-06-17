@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect, jsonify
 import os
 import re
-from urllib.parse import unquote
+from urllib.parse import unquote, urlencode
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
@@ -13,6 +13,25 @@ def get_db():
     if not DATABASE_URL:
         raise Exception("ไม่พบค่า DATABASE_URL")
     return psycopg2.connect(DATABASE_URL, sslmode="require")
+
+
+def get_search_value():
+    """รับค่าค้นหาจากทั้ง query string และ form เพื่อให้ค้างค่าหลังบันทึก/อัปเดต/ลบ"""
+    return (
+        request.form.get("search", "")
+        or request.args.get("search", "")
+        or ""
+    ).strip()
+
+
+def redirect_home_with_search(search_value):
+    """กลับหน้าแรกพร้อมคงค่าค้นหาเดิมไว้ ถ้ามีค่า"""
+    search_value = (search_value or "").strip()
+
+    if search_value:
+        return redirect("/?" + urlencode({"search": search_value}))
+
+    return redirect("/")
 
 
 def clean_mnh(value):
@@ -146,6 +165,8 @@ def api_device(mnh):
 
 @app.route("/save", methods=["POST"])
 def save():
+    current_search = get_search_value()
+
     edit_id_raw = request.form.get("edit_id", "").strip()
     original_mnh = clean_mnh(request.form.get("original_mnh", ""))
 
@@ -255,11 +276,13 @@ def save():
         cur.close()
         conn.close()
 
-    return redirect("/")
+    return redirect_home_with_search(current_search)
 
 
 @app.route("/delete/<int:id>", methods=["POST"])
 def delete_device(id):
+    current_search = get_search_value()
+
     conn = get_db()
     cur = conn.cursor()
 
@@ -269,7 +292,7 @@ def delete_device(id):
     cur.close()
     conn.close()
 
-    return redirect("/")
+    return redirect_home_with_search(current_search)
 
 
 if __name__ == "__main__":

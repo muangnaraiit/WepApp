@@ -362,6 +362,7 @@
                 <form method="post" action="/save" id="deviceForm">
                     <input type="hidden" name="edit_id" id="edit_id" value="">
                     <input type="hidden" name="original_mnh" id="original_mnh" value="">
+                    <input type="hidden" name="search" id="current_search" value="{{ search }}">
 
                     <label>MNH</label>
                     <input type="text" name="mnh" id="mnh" required placeholder="เช่น IT-03 หรือ MNA-00020">
@@ -421,7 +422,7 @@
 
             <div class="card-body">
                 <form method="get" action="/" class="search-row" id="searchForm">
-                    <input type="text" name="search" value="{{ search }}" placeholder="ค้นหา MNH / รุ่น / Serial / ชื่อเครื่อง">
+                    <input type="text" name="search" id="listSearchInput" value="{{ search }}" placeholder="ค้นหา MNH / รุ่น / Serial / ชื่อเครื่อง">
                     <button type="submit" class="btn-search">ค้นหา</button>
                 </form>
 
@@ -461,7 +462,8 @@
                                             method="post"
                                             action="/delete/{{ row.id }}"
                                             class="delete-form"
-                                            onsubmit="return confirm('ยืนยันการลบข้อมูล {{ row.mnh }} ?');">
+                                            onsubmit="return syncSearchBeforeDelete(this) && confirm('ยืนยันการลบข้อมูล {{ row.mnh }} ?');">
+                                            <input type="hidden" name="search" value="{{ search }}">
                                             <button type="submit" class="btn-delete">
                                                 ลบ
                                             </button>
@@ -493,6 +495,9 @@
     const serialInput = document.getElementById("serial_number");
     const computerNameInput = document.getElementById("computer_name");
     const statusBox = document.getElementById("statusBox");
+    const currentSearchInput = document.getElementById("current_search");
+    const listSearchInput = document.getElementById("listSearchInput");
+    const deviceForm = document.getElementById("deviceForm");
 
     function cleanMNH(value) {
         if (!value) return "";
@@ -613,6 +618,29 @@
         serialInput.readOnly = false;
         statusBox.style.display = "none";
         mnhInput.focus();
+    }
+
+
+    function getCurrentListSearch() {
+        return listSearchInput ? listSearchInput.value.trim() : "";
+    }
+
+    function keepSearchBeforeSubmit() {
+        if (currentSearchInput) {
+            currentSearchInput.value = getCurrentListSearch();
+        }
+    }
+
+    function syncSearchBeforeDelete(form) {
+        const hidden = form.querySelector('input[name="search"]');
+        if (hidden) {
+            hidden.value = getCurrentListSearch();
+        }
+        return true;
+    }
+
+    if (deviceForm) {
+        deviceForm.addEventListener("submit", keepSearchBeforeSubmit);
     }
 
     document.addEventListener("keydown", function(e) {
