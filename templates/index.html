@@ -162,12 +162,27 @@
             margin-top: 8px;
         }
 
-        .btn-edit {
+        .btn-edit-icon {
             background: var(--warning);
             color: white;
-            padding: 8px 12px;
+            width: 32px;
+            height: 32px;
+            padding: 0;
             border-radius: 10px;
-            font-size: 13px;
+            font-size: 15px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            vertical-align: middle;
+            margin-left: 6px;
+        }
+
+        .computer-name-cell {
+            white-space: nowrap;
+        }
+
+        .computer-name-text {
+            vertical-align: middle;
         }
 
         .btn-delete {
@@ -319,7 +334,6 @@
                 align-items: stretch;
             }
 
-            .btn-edit,
             .btn-delete {
                 width: 100%;
                 margin-left: 0;
@@ -346,6 +360,8 @@
 
             <div class="card-body">
                 <form method="post" action="/save" id="deviceForm">
+                    <input type="hidden" name="edit_id" id="edit_id" value="">
+                    <input type="hidden" name="original_mnh" id="original_mnh" value="">
 
                     <label>MNH</label>
                     <input type="text" name="mnh" id="mnh" required placeholder="เช่น IT-03 หรือ MNA-00020">
@@ -418,26 +434,29 @@
                                 <th>รุ่น</th>
                                 <th>Serial</th>
                                 <th>MNH</th>
-                                <th>จัดการ</th>
+                                <th>ลบ</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for row in rows %}
                             <tr>
-                                <td>{{ row.computer_name or '-' }}</td>
+                                <td class="computer-name-cell">
+                                    <span class="computer-name-text">{{ row.computer_name or '-' }}</span>
+                                    <button
+                                        type="button"
+                                        class="btn-edit-icon"
+                                        title="แก้ไข"
+                                        aria-label="แก้ไข {{ row.mnh }}"
+                                        onclick='editDevice({{ row|tojson }})'>
+                                        ✏️
+                                    </button>
+                                </td>
                                 <td><span class="badge">{{ row.device_type }}</span></td>
                                 <td>{{ row.model or '-' }}</td>
                                 <td>{{ row.serial_number or '-' }}</td>
                                 <td class="mnh">{{ row.mnh }}</td>
                                 <td>
                                     <div class="action-cell">
-                                        <button
-                                            type="button"
-                                            class="btn-edit"
-                                            onclick='editDevice({{ row|tojson }})'>
-                                            แก้ไข
-                                        </button>
-
                                         <form
                                             method="post"
                                             action="/delete/{{ row.id }}"
@@ -466,6 +485,8 @@
 </div>
 
 <script>
+    const editIdInput = document.getElementById("edit_id");
+    const originalMnhInput = document.getElementById("original_mnh");
     const mnhInput = document.getElementById("mnh");
     const deviceType = document.getElementById("device_type");
     const modelInput = document.getElementById("model");
@@ -529,21 +550,30 @@
             if (json.found) {
                 const d = json.data;
 
+                editIdInput.value = d.id || "";
+                originalMnhInput.value = d.mnh || mnh;
                 deviceType.value = d.device_type || "";
                 modelInput.value = d.model || "";
                 serialInput.value = d.serial_number || "";
                 computerNameInput.value = d.computer_name || "";
 
                 statusBox.className = "status found";
-                statusBox.innerText = "พบข้อมูลเดิม ดึงข้อมูลมาให้แก้ไขแล้ว";
+                statusBox.innerText = "พบข้อมูลเดิม ดึงข้อมูลตัวนี้มาให้แก้ไขแล้ว";
             } else {
-                deviceType.value = "";
-                modelInput.value = "";
-                serialInput.value = "";
-                computerNameInput.value = "";
+                // ถ้าอยู่ระหว่างแก้ไขและเปลี่ยนเป็น MNH ใหม่ที่ยังไม่มีในระบบ
+                // ให้เก็บ edit_id เดิมไว้ เพื่ออัปเดตข้อมูลแถวเดิม ไม่สร้างแถวใหม่
+                if (!editIdInput.value) {
+                    originalMnhInput.value = "";
+                    deviceType.value = "";
+                    modelInput.value = "";
+                    serialInput.value = "";
+                    computerNameInput.value = "";
+                }
 
                 statusBox.className = "status new";
-                statusBox.innerText = "ไม่พบข้อมูลเดิม สามารถเพิ่มข้อมูลใหม่ได้";
+                statusBox.innerText = editIdInput.value
+                    ? "ไม่พบรหัสนี้ในระบบ ระบบจะอัปเดตข้อมูลเดิมด้วยรหัสใหม่นี้"
+                    : "ไม่พบข้อมูลเดิม สามารถเพิ่มข้อมูลใหม่ได้";
             }
 
             syncPCFields();
@@ -555,6 +585,8 @@
     }
 
     function editDevice(row) {
+        editIdInput.value = row.id || "";
+        originalMnhInput.value = row.mnh || "";
         mnhInput.value = row.mnh || "";
         deviceType.value = row.device_type || "";
         modelInput.value = row.model || "";
@@ -575,6 +607,8 @@
 
     function clearForm() {
         document.getElementById("deviceForm").reset();
+        editIdInput.value = "";
+        originalMnhInput.value = "";
         modelInput.readOnly = false;
         serialInput.readOnly = false;
         statusBox.style.display = "none";

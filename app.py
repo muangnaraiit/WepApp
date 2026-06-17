@@ -130,6 +130,9 @@ def api_device(mnh):
 
 @app.route("/save", methods=["POST"])
 def save():
+    edit_id_raw = request.form.get("edit_id", "").strip()
+    original_mnh = clean_mnh(request.form.get("original_mnh", ""))
+
     mnh = clean_mnh(request.form.get("mnh", ""))
     device_type = request.form.get("device_type", "").strip()
     model = request.form.get("model", "").strip()
@@ -143,35 +146,98 @@ def save():
         model = "PC"
         serial_number = "PC"
 
+    edit_id = None
+    if edit_id_raw.isdigit():
+        edit_id = int(edit_id_raw)
+
     conn = get_db()
-    cur = conn.cursor()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
 
-    cur.execute("""
-        INSERT INTO devices (
-            mnh,
-            device_type,
-            model,
-            serial_number,
-            computer_name
-        )
-        VALUES (%s, %s, %s, %s, %s)
-        ON CONFLICT (mnh)
-        DO UPDATE SET
-            device_type = EXCLUDED.device_type,
-            model = EXCLUDED.model,
-            serial_number = EXCLUDED.serial_number,
-            computer_name = EXCLUDED.computer_name
-    """, (
-        mnh,
-        device_type,
-        model,
-        serial_number,
-        computer_name
-    ))
+    try:
+        if edit_id:
+            # โหมดแก้ไข:
+            # 1) ถ้า MNH ที่พิมพ์ไปตรงกับข้อมูลตัวอื่น ระบบจะอัปเดตตัวนั้น
+            # 2) ถ้า MNH ที่พิมพ์ไม่ตรงกับข้อมูลที่มีในระบบ ระบบจะอัปเดตแถวเดิมและเปลี่ยน MNH ของแถวเดิม
+            cur.execute("""
+                SELECT id
+                FROM devices
+                WHERE mnh = %s
+                LIMIT 1
+            """, (mnh,))
+            found_by_mnh = cur.fetchone()
 
-    conn.commit()
-    cur.close()
-    conn.close()
+            target_id = edit_id
+            if found_by_mnh:
+                target_id = found_by_mnh["id"]
+
+            cur.execute("""
+                UPDATE devices
+                SET
+                    mnh = %s,
+                    device_type = %s,
+                    model = %s,
+                    serial_number = %s,
+                    computer_name = %s
+                WHERE id = %s
+            """, (
+                mnh,
+                device_type,
+                model,
+                serial_number,
+                computer_name,
+                target_id
+            ))
+
+            if cur.rowcount == 0 and original_mnh:
+                cur.execute("""
+                    UPDATE devices
+                    SET
+                        mnh = %s,
+                        device_type = %s,
+                        model = %s,
+                        serial_number = %s,
+                        computer_name = %s
+                    WHERE mnh = %s
+                """, (
+                    mnh,
+                    device_type,
+                    model,
+                    serial_number,
+                    computer_name,
+                    original_mnh
+                ))
+        else:
+            # โหมดเพิ่มข้อมูล / อัปเดตปกติด้วย MNH
+            cur.execute("""
+                INSERT INTO devices (
+                    mnh,
+                    device_type,
+                    model,
+                    serial_number,
+                    computer_name
+                )
+                VALUES (%s, %s, %s, %s, %s)
+                ON CONFLICT (mnh)
+                DO UPDATE SET
+                    device_type = EXCLUDED.device_type,
+                    model = EXCLUDED.model,
+                    serial_number = EXCLUDED.serial_number,
+                    computer_name = EXCLUDED.computer_name
+            """, (
+                mnh,
+                device_type,
+                model,
+                serial_number,
+                computer_name
+            ))
+
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        cur.close()
+        conn.close()
 
     return redirect("/")
 
