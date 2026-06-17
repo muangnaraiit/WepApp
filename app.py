@@ -36,8 +36,24 @@ def clean_mnh(value):
 ORDER_SQL = """
     ORDER BY
         computer_name ASC NULLS LAST,
-        device_type ASC NULLS LAST,
-        serial_number ASC NULLS LAST
+
+        CASE device_type
+            WHEN 'PC' THEN 1
+            WHEN 'AIO' THEN 2
+            WHEN 'Notebook' THEN 3
+            WHEN 'Monitor' THEN 4
+            WHEN 'Printer' THEN 5
+            WHEN 'Scanner' THEN 6
+            WHEN 'UPS' THEN 7
+            WHEN 'Phone' THEN 8
+            WHEN 'Switch Hub' THEN 9
+            WHEN 'Projector' THEN 10
+            ELSE 99
+        END ASC,
+
+        model ASC NULLS LAST,
+        serial_number ASC NULLS LAST,
+        mnh ASC NULLS LAST
 """
 
 
