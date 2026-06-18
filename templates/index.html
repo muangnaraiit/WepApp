@@ -155,6 +155,16 @@
             min-width: 100px;
         }
 
+        .btn-export {
+            background: var(--success);
+            color: white;
+            min-width: 150px;
+        }
+
+        .btn-export:hover {
+            background: #15803d;
+        }
+
         .btn-clear {
             background: #e2e8f0;
             color: #334155;
@@ -321,7 +331,8 @@
                 flex-direction: column;
             }
 
-            .btn-search {
+            .btn-search,
+            .btn-export {
                 width: 100%;
             }
 
@@ -425,7 +436,14 @@
             <div class="card-body">
                 <form method="get" action="/" class="search-row" id="searchForm">
                     <input type="text" name="search" id="listSearchInput" value="{{ search }}" placeholder="ค้นหา MNH / รุ่น / Serial / ชื่อเครื่อง">
-                    <button type="submit" class="btn-search">ค้นหา</button>
+
+                    <button type="submit" class="btn-search">
+                        🔍 ค้นหา
+                    </button>
+
+                    <button type="button" class="btn-export" onclick="exportExcel()">
+                        📊 Export Excel
+                    </button>
                 </form>
 
                 <div class="table-wrap">
@@ -643,6 +661,12 @@
 
     if (deviceForm) {
         deviceForm.addEventListener("submit", keepSearchBeforeSubmit);
+    }
+
+
+    function exportExcel() {
+        const search = encodeURIComponent(getCurrentListSearch());
+        window.location.href = `/export_excel?search=${search}`;
     }
 
     document.addEventListener("keydown", function(e) {

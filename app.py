@@ -1,9 +1,14 @@
-from flask import Flask, render_template, request, redirect, jsonify
+from flask import Flask, render_template, request, redirect, jsonify, send_file
 import os
 import re
+from io import BytesIO
 from urllib.parse import unquote, urlencode
 import psycopg2
 from psycopg2.extras import RealDictCursor
+from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.utils import get_column_letter
+
 
 app = Flask(__name__)
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -48,6 +53,24 @@ def clean_mnh(value):
 
     if not re.match(r"^[A-Z0-9\-]+$", value):
         return ""
+
+    return value
+
+
+def excel_text(value):
+    """
+    แปลงค่าทุกช่องให้เป็น Text สำหรับ Excel
+    - None เป็นค่าว่าง
+    - ค่าอื่นแปลงเป็น string
+    - กัน Excel ตีความเป็นสูตร ถ้าขึ้นต้นด้วย = + - @
+    """
+    if value is None:
+        return ""
+
+    value = str(value)
+
+    if value.startswith(("=", "+", "-", "@")):
+        return "'" + value
 
     return value
 
@@ -293,6 +316,132 @@ def delete_device(id):
     conn.close()
 
     return redirect_home_with_search(current_search)
+
+
+@app.route("/export_excel")
+def export_excel():
+    search_raw = request.args.get("search", "").strip()
+    search = clean_mnh(search_raw) or search_raw
+
+    conn = get_db()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+
+    if search:
+        keyword = f"%{search}%"
+        cur.execute(f"""
+            SELECT
+                computer_name,
+                device_type,
+                model,
+                serial_number,
+                mnh
+            FROM devices
+            WHERE mnh ILIKE %s
+               OR device_type ILIKE %s
+               OR model ILIKE %s
+               OR serial_number ILIKE %s
+               OR computer_name ILIKE %s
+            {ORDER_SQL}
+        """, (keyword, keyword, keyword, keyword, keyword))
+    else:
+        cur.execute(f"""
+            SELECT
+                computer_name,
+                device_type,
+                model,
+                serial_number,
+                mnh
+            FROM devices
+            {ORDER_SQL}
+        """)
+
+    rows = cur.fetchall()
+
+    cur.close()
+    conn.close()
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "รายการอุปกรณ์"
+
+    headers = [
+        "ชื่อเครื่อง",
+        "ประเภท",
+        "รุ่น",
+        "Serial Number",
+        "MNH"
+    ]
+
+    ws.append(headers)
+
+    # ตั้งค่า Header
+    header_fill = PatternFill("solid", fgColor="D9EAF7")
+    header_font = Font(bold=True)
+    thin_border = Border(
+        left=Side(style="thin", color="D9E2EC"),
+        right=Side(style="thin", color="D9E2EC"),
+        top=Side(style="thin", color="D9E2EC"),
+        bottom=Side(style="thin", color="D9E2EC"),
+    )
+
+    for cell in ws[1]:
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+        cell.border = thin_border
+        cell.number_format = "@"
+
+    # เพิ่มข้อมูล และบังคับทุก cell ให้เป็น Text
+    for row in rows:
+        ws.append([
+            excel_text(row.get("computer_name")),
+            excel_text(row.get("device_type")),
+            excel_text(row.get("model")),
+            excel_text(row.get("serial_number")),
+            excel_text(row.get("mnh")),
+        ])
+
+    for row in ws.iter_rows():
+        for cell in row:
+            cell.number_format = "@"
+            cell.alignment = Alignment(vertical="top", wrap_text=True)
+            cell.border = thin_border
+            if cell.value is None:
+                cell.value = ""
+            else:
+                cell.value = excel_text(cell.value)
+
+    # ตั้งความกว้างคอลัมน์
+    column_widths = {
+        "A": 24,
+        "B": 18,
+        "C": 30,
+        "D": 24,
+        "E": 20,
+    }
+
+    for col, width in column_widths.items():
+        ws.column_dimensions[col].width = width
+
+    # Freeze header และ Filter
+    ws.freeze_panes = "A2"
+    ws.auto_filter.ref = ws.dimensions
+
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    filename = "devices.xlsx"
+    if search:
+        safe_search = re.sub(r"[^A-Za-z0-9ก-๙_-]+", "_", search)
+        filename = f"devices_{safe_search}.xlsx"
+
+    return send_file(
+        output,
+        as_attachment=True,
+        download_name=filename,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
 
 
 if __name__ == "__main__":
