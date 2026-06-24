@@ -7,7 +7,6 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
-from openpyxl.utils import get_column_letter
 
 
 app = Flask(__name__)
@@ -21,16 +20,59 @@ def get_db():
 
 
 def ensure_device_extra_columns():
-    """เพิ่มคอลัมน์ใหม่ให้อัตโนมัติ กรณีฐานข้อมูลเดิมยังไม่มีฟิลด์ประกัน/IP"""
+    """
+    เตรียมฐานข้อมูลให้รองรับฟิลด์ใหม่
+    - เพิ่ม IP / วันประกัน / จุดประจำการ
+    - ปลดล็อก MNH ให้เว้นว่างได้
+    - ลบ unique constraint/index ของ MNH เพื่อให้ MNH ซ้ำได้
+    """
     conn = get_db()
     cur = conn.cursor()
 
     cur.execute("""
         ALTER TABLE devices
+        ADD COLUMN IF NOT EXISTS station VARCHAR(100),
         ADD COLUMN IF NOT EXISTS ip_address VARCHAR(50),
         ADD COLUMN IF NOT EXISTS warranty_start DATE,
         ADD COLUMN IF NOT EXISTS warranty_end DATE
     """)
+
+    # อนุญาตให้ MNH เป็นค่าว่างได้
+    cur.execute("""
+        ALTER TABLE devices
+        ALTER COLUMN mnh DROP NOT NULL
+    """)
+
+    # ลบ UNIQUE constraint ที่ผูกกับคอลัมน์ mnh ถ้ามี
+    cur.execute("""
+        SELECT conname
+        FROM pg_constraint
+        WHERE conrelid = 'devices'::regclass
+          AND contype = 'u'
+          AND conkey = ARRAY[
+              (
+                  SELECT attnum
+                  FROM pg_attribute
+                  WHERE attrelid = 'devices'::regclass
+                    AND attname = 'mnh'
+              )
+          ]
+    """)
+    constraints = cur.fetchall()
+    for (constraint_name,) in constraints:
+        cur.execute(f'ALTER TABLE devices DROP CONSTRAINT IF EXISTS "{constraint_name}"')
+
+    # ลบ UNIQUE index ที่สร้างไว้กับ mnh โดยตรง ถ้ามี
+    cur.execute("""
+        SELECT indexname
+        FROM pg_indexes
+        WHERE tablename = 'devices'
+          AND indexdef ILIKE '%UNIQUE%'
+          AND indexdef ILIKE '%(mnh)%'
+    """)
+    indexes = cur.fetchall()
+    for (index_name,) in indexes:
+        cur.execute(f'DROP INDEX IF EXISTS "{index_name}"')
 
     conn.commit()
     cur.close()
@@ -74,6 +116,12 @@ def redirect_home_with_search(search_value):
 
 
 def clean_mnh(value):
+    """
+    ทำความสะอาด MNH
+    - เว้นว่างได้
+    - ถ้าวาง URL barcode จะตัด prefix ออก
+    - ถ้ามีอักขระแปลก ๆ ให้คืนค่าว่างเพื่อไม่ให้ข้อมูลขยะเข้า DB
+    """
     if not value:
         return ""
 
@@ -84,6 +132,9 @@ def clean_mnh(value):
         value = value[len(prefix):]
 
     value = value.upper().strip()
+
+    if value == "":
+        return ""
 
     if not re.match(r"^[A-Z0-9\-]+$", value):
         return ""
@@ -111,6 +162,7 @@ def excel_text(value):
 
 ORDER_SQL = """
     ORDER BY
+        station ASC NULLS LAST,
         computer_name ASC NULLS LAST,
 
         CASE device_type
@@ -148,16 +200,17 @@ def home():
         cur.execute(f"""
             SELECT *
             FROM devices
-            WHERE mnh ILIKE %s
-               OR device_type ILIKE %s
-               OR model ILIKE %s
-               OR serial_number ILIKE %s
-               OR computer_name ILIKE %s
-               OR ip_address ILIKE %s
-               OR TO_CHAR(warranty_start, 'YYYY-MM-DD') ILIKE %s
-               OR TO_CHAR(warranty_end, 'YYYY-MM-DD') ILIKE %s
+            WHERE COALESCE(mnh, '') ILIKE %s
+               OR COALESCE(station, '') ILIKE %s
+               OR COALESCE(device_type, '') ILIKE %s
+               OR COALESCE(model, '') ILIKE %s
+               OR COALESCE(serial_number, '') ILIKE %s
+               OR COALESCE(computer_name, '') ILIKE %s
+               OR COALESCE(ip_address, '') ILIKE %s
+               OR COALESCE(TO_CHAR(warranty_start, 'YYYY-MM-DD'), '') ILIKE %s
+               OR COALESCE(TO_CHAR(warranty_end, 'YYYY-MM-DD'), '') ILIKE %s
             {ORDER_SQL}
-        """, (keyword, keyword, keyword, keyword, keyword, keyword, keyword, keyword))
+        """, (keyword, keyword, keyword, keyword, keyword, keyword, keyword, keyword, keyword))
     else:
         cur.execute(f"""
             SELECT *
@@ -204,27 +257,34 @@ def api_device(mnh):
     mnh = clean_mnh(mnh)
 
     if not mnh:
-        return jsonify({"found": False})
+        return jsonify({"found": False, "items": []})
 
     conn = get_db()
     cur = conn.cursor(cursor_factory=RealDictCursor)
 
-    cur.execute("""
+    # MNH ซ้ำได้ จึงต้องคืนทุกรายการให้หน้าเว็บเลือก
+    cur.execute(f"""
         SELECT *
         FROM devices
         WHERE mnh = %s
-        LIMIT 1
+        {ORDER_SQL}
     """, (mnh,))
 
-    row = cur.fetchone()
+    rows = cur.fetchall()
 
     cur.close()
     conn.close()
 
-    if row:
-        return jsonify({"found": True, "data": format_device_row(row)})
+    items = [format_device_row(row) for row in rows]
 
-    return jsonify({"found": False})
+    if items:
+        return jsonify({
+            "found": True,
+            "data": items[0],
+            "items": items
+        })
+
+    return jsonify({"found": False, "items": []})
 
 
 @app.route("/save", methods=["POST"])
@@ -234,9 +294,10 @@ def save():
     current_search = get_search_value()
 
     edit_id_raw = request.form.get("edit_id", "").strip()
-    original_mnh = clean_mnh(request.form.get("original_mnh", ""))
 
+    # MNH ไม่บังคับกรอก และซ้ำได้
     mnh = clean_mnh(request.form.get("mnh", ""))
+    station = request.form.get("station", "").strip()
     device_type = request.form.get("device_type", "").strip()
     model = request.form.get("model", "").strip()
     serial_number = request.form.get("serial_number", "").strip()
@@ -244,9 +305,6 @@ def save():
     ip_address = request.form.get("ip_address", "").strip()
     warranty_start = request.form.get("warranty_start") or None
     warranty_end = request.form.get("warranty_end") or None
-
-    if not mnh:
-        return "MNH ไม่ถูกต้อง กรุณากรอกใหม่", 400
 
     if device_type == "PC":
         model = "PC"
@@ -261,25 +319,12 @@ def save():
 
     try:
         if edit_id:
-            # โหมดแก้ไข:
-            # 1) ถ้า MNH ที่พิมพ์ไปตรงกับข้อมูลตัวอื่น ระบบจะอัปเดตตัวนั้น
-            # 2) ถ้า MNH ที่พิมพ์ไม่ตรงกับข้อมูลที่มีในระบบ ระบบจะอัปเดตแถวเดิมและเปลี่ยน MNH ของแถวเดิม
-            cur.execute("""
-                SELECT id
-                FROM devices
-                WHERE mnh = %s
-                LIMIT 1
-            """, (mnh,))
-            found_by_mnh = cur.fetchone()
-
-            target_id = edit_id
-            if found_by_mnh:
-                target_id = found_by_mnh["id"]
-
+            # โหมดแก้ไข: แก้ตาม id เท่านั้น เพื่อให้ MNH ซ้ำได้และไม่ไปทับรายการอื่น
             cur.execute("""
                 UPDATE devices
                 SET
                     mnh = %s,
+                    station = %s,
                     device_type = %s,
                     model = %s,
                     serial_number = %s,
@@ -290,6 +335,7 @@ def save():
                 WHERE id = %s
             """, (
                 mnh,
+                station,
                 device_type,
                 model,
                 serial_number,
@@ -297,38 +343,14 @@ def save():
                 ip_address,
                 warranty_start,
                 warranty_end,
-                target_id
+                edit_id
             ))
-
-            if cur.rowcount == 0 and original_mnh:
-                cur.execute("""
-                    UPDATE devices
-                    SET
-                        mnh = %s,
-                        device_type = %s,
-                        model = %s,
-                        serial_number = %s,
-                        computer_name = %s,
-                        ip_address = %s,
-                        warranty_start = %s,
-                        warranty_end = %s
-                    WHERE mnh = %s
-                """, (
-                    mnh,
-                    device_type,
-                    model,
-                    serial_number,
-                    computer_name,
-                    ip_address,
-                    warranty_start,
-                    warranty_end,
-                    original_mnh
-                ))
         else:
-            # โหมดเพิ่มข้อมูล / อัปเดตปกติด้วย MNH
+            # โหมดเพิ่มข้อมูล: INSERT ใหม่เสมอ เพื่อรองรับ MNH ซ้ำ/ว่าง
             cur.execute("""
                 INSERT INTO devices (
                     mnh,
+                    station,
                     device_type,
                     model,
                     serial_number,
@@ -337,18 +359,10 @@ def save():
                     warranty_start,
                     warranty_end
                 )
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                ON CONFLICT (mnh)
-                DO UPDATE SET
-                    device_type = EXCLUDED.device_type,
-                    model = EXCLUDED.model,
-                    serial_number = EXCLUDED.serial_number,
-                    computer_name = EXCLUDED.computer_name,
-                    ip_address = EXCLUDED.ip_address,
-                    warranty_start = EXCLUDED.warranty_start,
-                    warranty_end = EXCLUDED.warranty_end
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
             """, (
                 mnh,
+                station,
                 device_type,
                 model,
                 serial_number,
@@ -399,6 +413,7 @@ def export_excel():
         keyword = f"%{search}%"
         cur.execute(f"""
             SELECT
+                station,
                 computer_name,
                 device_type,
                 model,
@@ -408,19 +423,21 @@ def export_excel():
                 warranty_start,
                 warranty_end
             FROM devices
-            WHERE mnh ILIKE %s
-               OR device_type ILIKE %s
-               OR model ILIKE %s
-               OR serial_number ILIKE %s
-               OR computer_name ILIKE %s
-               OR ip_address ILIKE %s
-               OR TO_CHAR(warranty_start, 'YYYY-MM-DD') ILIKE %s
-               OR TO_CHAR(warranty_end, 'YYYY-MM-DD') ILIKE %s
+            WHERE COALESCE(mnh, '') ILIKE %s
+               OR COALESCE(station, '') ILIKE %s
+               OR COALESCE(device_type, '') ILIKE %s
+               OR COALESCE(model, '') ILIKE %s
+               OR COALESCE(serial_number, '') ILIKE %s
+               OR COALESCE(computer_name, '') ILIKE %s
+               OR COALESCE(ip_address, '') ILIKE %s
+               OR COALESCE(TO_CHAR(warranty_start, 'YYYY-MM-DD'), '') ILIKE %s
+               OR COALESCE(TO_CHAR(warranty_end, 'YYYY-MM-DD'), '') ILIKE %s
             {ORDER_SQL}
-        """, (keyword, keyword, keyword, keyword, keyword, keyword, keyword, keyword))
+        """, (keyword, keyword, keyword, keyword, keyword, keyword, keyword, keyword, keyword))
     else:
         cur.execute(f"""
             SELECT
+                station,
                 computer_name,
                 device_type,
                 model,
@@ -443,6 +460,7 @@ def export_excel():
     ws.title = "รายการอุปกรณ์"
 
     headers = [
+        "จุดประจำการ",
         "ชื่อเครื่อง",
         "ประเภท",
         "รุ่น",
@@ -455,7 +473,6 @@ def export_excel():
 
     ws.append(headers)
 
-    # ตั้งค่า Header
     header_fill = PatternFill("solid", fgColor="D9EAF7")
     header_font = Font(bold=True)
     thin_border = Border(
@@ -472,9 +489,9 @@ def export_excel():
         cell.border = thin_border
         cell.number_format = "@"
 
-    # เพิ่มข้อมูล และบังคับทุก cell ให้เป็น Text
     for row in rows:
         ws.append([
+            excel_text(row.get("station")),
             excel_text(row.get("computer_name")),
             excel_text(row.get("device_type")),
             excel_text(row.get("model")),
@@ -495,22 +512,21 @@ def export_excel():
             else:
                 cell.value = excel_text(cell.value)
 
-    # ตั้งความกว้างคอลัมน์
     column_widths = {
-        "A": 24,
-        "B": 18,
-        "C": 30,
-        "D": 24,
-        "E": 20,
-        "F": 18,
-        "G": 20,
+        "A": 22,
+        "B": 24,
+        "C": 18,
+        "D": 30,
+        "E": 24,
+        "F": 20,
+        "G": 18,
         "H": 20,
+        "I": 20,
     }
 
     for col, width in column_widths.items():
         ws.column_dimensions[col].width = width
 
-    # Freeze header และ Filter
     ws.freeze_panes = "A2"
     ws.auto_filter.ref = ws.dimensions
 
