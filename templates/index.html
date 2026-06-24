@@ -231,6 +231,45 @@
             border: 1px solid #fde68a;
         }
 
+        .duplicate-list {
+            display: none;
+            margin-top: 10px;
+            border: 1px dashed #f59e0b;
+            background: #fffbeb;
+            border-radius: 14px;
+            padding: 10px;
+        }
+
+        .duplicate-title {
+            font-size: 13px;
+            font-weight: 800;
+            color: #92400e;
+            margin-bottom: 8px;
+        }
+
+        .duplicate-item {
+            width: 100%;
+            text-align: left;
+            background: #ffffff;
+            color: #0f172a;
+            border: 1px solid #fde68a;
+            margin-top: 6px;
+            padding: 10px 12px;
+            border-radius: 12px;
+            white-space: normal;
+            font-size: 13px;
+        }
+
+        .duplicate-none {
+            width: 100%;
+            background: #e2e8f0;
+            color: #334155;
+            margin-top: 8px;
+            padding: 10px 12px;
+            border-radius: 12px;
+            font-size: 13px;
+        }
+
         .search-row {
             display: flex;
             gap: 8px;
@@ -246,7 +285,7 @@
 
         table {
             width: 100%;
-            min-width: 1200px;
+            min-width: 1350px;
             border-collapse: collapse;
             background: white;
         }
@@ -366,7 +405,7 @@
         <div class="card">
             <div class="card-header">
                 <h2>บันทึก / อัปเดตอุปกรณ์</h2>
-                <span>กรอก MNH หากมีข้อมูลเดิมระบบจะดึงมาให้แก้ไข</span>
+                <span>MNH สามารถเว้นว่างหรือใส่ซ้ำได้ หากพบข้อมูลซ้ำระบบจะแสดงให้เลือก</span>
             </div>
 
             <div class="card-body">
@@ -376,12 +415,14 @@
                     <input type="hidden" name="search" id="current_search" value="{{ search }}">
 
                     <label>MNH</label>
-                    <input type="text" name="mnh" id="mnh" required placeholder="เช่น IT-03 หรือ MNA-00020">
+                    <input type="text" name="mnh" id="mnh" placeholder="เช่น IT-03 หรือ MNA-00020 หรือเว้นว่างได้">
                     <div class="hint">
-                        หากวาง URL เช่น https://www.dsmetsmart.com/dsmet_hos/test_barcode.php?id=MNA-00020 ระบบจะตัดให้เหลือ MNA-00020 อัตโนมัติ
+                        ช่องนี้ไม่บังคับกรอก สามารถเว้นว่างได้ และสามารถใส่ MNH ซ้ำได้ หากวาง URL ระบบจะตัดให้เหลือเฉพาะรหัสอัตโนมัติ
                     </div>
 
                     <div id="statusBox" class="status"></div>
+
+                    <div id="duplicateList" class="duplicate-list"></div>
 
                     <label>ประเภทอุปกรณ์</label>
                     <select name="device_type" id="device_type" required>
@@ -421,6 +462,40 @@
                         {% endfor %}
                     </datalist>
 
+                    <label>จุดประจำการ</label>
+                    <select name="station" id="station">
+                        <option value="">-- เลือกจุดประจำการ --</option>
+                        <option value="ธุรการ">ธุรการ</option>
+                        <option value="การเงินใน">การเงินใน</option>
+                        <option value="ประชาสัมพันธ์">ประชาสัมพันธ์</option>
+                        <option value="การเงินนอก">การเงินนอก</option>
+                        <option value="ห้องยา">ห้องยา</option>
+                        <option value="OPD">OPD</option>
+                        <option value="ER">ER</option>
+                        <option value="LAB">LAB</option>
+                        <option value="XRAY">XRAY</option>
+                        <option value="บริการ">บริการ</option>
+                        <option value="OR">OR</option>
+                        <option value="การตลาด">การตลาด</option>
+                        <option value="ICU">ICU</option>
+                        <option value="WARD3">WARD3</option>
+                        <option value="WARD4">WARD4</option>
+                        <option value="WARD5">WARD5</option>
+                        <option value="กายภาพบำบัด">กายภาพบำบัด</option>
+                        <option value="บุคคล">บุคคล</option>
+                        <option value="แม่บ้าน">แม่บ้าน</option>
+                        <option value="ห้องผ้า">ห้องผ้า</option>
+                        <option value="ห้องครัว">ห้องครัว</option>
+                        <option value="ช่างซ่อมบำรุง">ช่างซ่อมบำรุง</option>
+                        <option value="คลังยา">คลังยา</option>
+                        <option value="บัญชี">บัญชี</option>
+                        <option value="ยานยนต์">ยานยนต์</option>
+                        <option value="ชั้นลอย">ชั้นลอย</option>
+                        <option value="IT">IT</option>
+                        <option value="WELLNESS">WELLNESS</option>
+                        <option value="SUPERVIVOR">SUPERVIVOR</option>
+                    </select>
+
                     <label>IP Address</label>
                     <input type="text" name="ip_address" id="ip_address" placeholder="เช่น 192.168.1.100">
 
@@ -445,7 +520,7 @@
 
             <div class="card-body">
                 <form method="get" action="/" class="search-row" id="searchForm">
-                    <input type="text" name="search" id="listSearchInput" value="{{ search }}" placeholder="ค้นหา MNH / รุ่น / Serial / ชื่อเครื่อง / IP / วันที่ประกัน">
+                    <input type="text" name="search" id="listSearchInput" value="{{ search }}" placeholder="ค้นหา MNH / จุดประจำการ / รุ่น / Serial / ชื่อเครื่อง / IP / วันที่ประกัน">
 
                     <button type="submit" class="btn-search">
                         🔍 ค้นหา
@@ -461,6 +536,7 @@
                         <thead>
                             <tr>
                                 <th>ชื่อเครื่อง</th>
+                                <th>จุดประจำการ</th>
                                 <th>ประเภท</th>
                                 <th>รุ่น</th>
                                 <th>Serial</th>
@@ -485,6 +561,7 @@
                                         ✏️
                                     </button>
                                 </td>
+                                <td>{{ row.station or '-' }}</td>
                                 <td><span class="badge">{{ row.device_type }}</span></td>
                                 <td>{{ row.model or '-' }}</td>
                                 <td>{{ row.serial_number or '-' }}</td>
@@ -509,7 +586,7 @@
                             </tr>
                             {% else %}
                             <tr>
-                                <td colspan="9" class="empty">ไม่พบข้อมูลอุปกรณ์</td>
+                                <td colspan="10" class="empty">ไม่พบข้อมูลอุปกรณ์</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -530,10 +607,12 @@
     const modelInput = document.getElementById("model");
     const serialInput = document.getElementById("serial_number");
     const computerNameInput = document.getElementById("computer_name");
+    const stationInput = document.getElementById("station");
     const ipAddressInput = document.getElementById("ip_address");
     const warrantyStartInput = document.getElementById("warranty_start");
     const warrantyEndInput = document.getElementById("warranty_end");
     const statusBox = document.getElementById("statusBox");
+    const duplicateList = document.getElementById("duplicateList");
     const currentSearchInput = document.getElementById("current_search");
     const listSearchInput = document.getElementById("listSearchInput");
     const deviceForm = document.getElementById("deviceForm");
@@ -561,7 +640,7 @@
     }
 
     function syncPCFields() {
-        mnhInput.value = cleanMNH(mnhInput.value);
+        // ไม่บังคับ MNH จึงไม่ล้างค่าขณะพิมพ์ทันที จะจัดรูปแบบตอน blur/change แทน
 
         if (deviceType.value === "PC") {
             modelInput.value = "PC";
@@ -574,14 +653,107 @@
         }
     }
 
+
+
+    function hideDuplicateList() {
+        duplicateList.style.display = "none";
+        duplicateList.innerHTML = "";
+    }
+
+    function deviceSummary(row) {
+        const parts = [];
+        if (row.computer_name) parts.push(`เครื่อง: ${row.computer_name}`);
+        if (row.station) parts.push(`จุด: ${row.station}`);
+        if (row.device_type) parts.push(`ประเภท: ${row.device_type}`);
+        if (row.model) parts.push(`รุ่น: ${row.model}`);
+        if (row.serial_number) parts.push(`SN: ${row.serial_number}`);
+        if (row.ip_address) parts.push(`IP: ${row.ip_address}`);
+        return parts.length ? parts.join(" | ") : "ไม่มีรายละเอียดเพิ่มเติม";
+    }
+
+    function fillDevice(row, message) {
+        editIdInput.value = row.id || "";
+        originalMnhInput.value = row.mnh || "";
+        mnhInput.value = row.mnh || "";
+        deviceType.value = row.device_type || "";
+        modelInput.value = row.model || "";
+        serialInput.value = row.serial_number || "";
+        computerNameInput.value = row.computer_name || "";
+        stationInput.value = row.station || "";
+        ipAddressInput.value = row.ip_address || "";
+        warrantyStartInput.value = row.warranty_start || "";
+        warrantyEndInput.value = row.warranty_end || "";
+
+        statusBox.style.display = "block";
+        statusBox.className = "status found";
+        statusBox.innerText = message || "กำลังแก้ไขข้อมูลเดิม";
+
+        syncPCFields();
+    }
+
+    function showDuplicateChoices(items) {
+        duplicateList.innerHTML = "";
+
+        const title = document.createElement("div");
+        title.className = "duplicate-title";
+        title.innerText = `พบ MNH ซ้ำทั้งหมด ${items.length} รายการ กรุณาเลือกตัวที่ต้องการแก้ไข หรือเลือกไม่เอาเลยเพื่อเพิ่มรายการใหม่`;
+        duplicateList.appendChild(title);
+
+        items.forEach((row, index) => {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "duplicate-item";
+            btn.innerText = `${index + 1}. ${deviceSummary(row)}`;
+            btn.onclick = function() {
+                fillDevice(row, "เลือกข้อมูลเดิมจากรายการซ้ำมาแก้ไขแล้ว");
+                hideDuplicateList();
+            };
+            duplicateList.appendChild(btn);
+        });
+
+        if (editIdInput.value) {
+            const keepBtn = document.createElement("button");
+            keepBtn.type = "button";
+            keepBtn.className = "duplicate-none";
+            keepBtn.innerText = "แก้ไขรายการเดิมนี้ต่อ / ยอมให้ MNH ซ้ำ";
+            keepBtn.onclick = function() {
+                statusBox.style.display = "block";
+                statusBox.className = "status found";
+                statusBox.innerText = "กำลังแก้ไขรายการเดิมนี้ต่อ ระบบยอมให้ MNH ซ้ำได้";
+                hideDuplicateList();
+            };
+            duplicateList.appendChild(keepBtn);
+        }
+
+        const noneBtn = document.createElement("button");
+        noneBtn.type = "button";
+        noneBtn.className = "duplicate-none";
+        noneBtn.innerText = "ไม่เอาเลย / เพิ่มเป็นรายการใหม่ด้วย MNH นี้";
+        noneBtn.onclick = function() {
+            editIdInput.value = "";
+            originalMnhInput.value = "";
+            statusBox.style.display = "block";
+            statusBox.className = "status new";
+            statusBox.innerText = "เลือกเพิ่มเป็นรายการใหม่ ระบบจะบันทึก MNH ซ้ำได้";
+            hideDuplicateList();
+        };
+        duplicateList.appendChild(noneBtn);
+
+        duplicateList.style.display = "block";
+    }
+
     async function loadDeviceByMNH() {
         const mnh = cleanMNH(mnhInput.value);
         mnhInput.value = mnh;
+        hideDuplicateList();
 
         if (!mnh) {
+            mnhInput.value = "";
             statusBox.style.display = "block";
             statusBox.className = "status new";
-            statusBox.innerText = "MNH ไม่ถูกต้อง หรือเป็นข้อมูลที่ไม่ต้องการ ระบบล้างค่าออกแล้ว";
+            statusBox.innerText = editIdInput.value
+                ? "MNH เป็นค่าว่างได้ ระบบจะอัปเดตรายการเดิมให้เป็นค่าว่างเมื่อกดบันทึก"
+                : "MNH เป็นค่าว่างได้ สามารถกรอกข้อมูลอื่นแล้วกดบันทึกเพิ่มรายการใหม่ได้";
             return;
         }
 
@@ -591,30 +763,20 @@
 
             statusBox.style.display = "block";
 
-            if (json.found) {
-                const d = json.data;
-
-                editIdInput.value = d.id || "";
-                originalMnhInput.value = d.mnh || mnh;
-                deviceType.value = d.device_type || "";
-                modelInput.value = d.model || "";
-                serialInput.value = d.serial_number || "";
-                computerNameInput.value = d.computer_name || "";
-                ipAddressInput.value = d.ip_address || "";
-                warrantyStartInput.value = d.warranty_start || "";
-                warrantyEndInput.value = d.warranty_end || "";
-
-                statusBox.className = "status found";
-                statusBox.innerText = "พบข้อมูลเดิม ดึงข้อมูลตัวนี้มาให้แก้ไขแล้ว";
+            if (json.found && json.items && json.items.length > 1) {
+                showDuplicateChoices(json.items);
+                statusBox.className = "status new";
+                statusBox.innerText = `พบ MNH นี้ซ้ำ ${json.items.length} รายการ กรุณาเลือกด้านล่าง`;
+            } else if (json.found) {
+                fillDevice(json.data, "พบข้อมูลเดิม ดึงข้อมูลตัวนี้มาให้แก้ไขแล้ว");
             } else {
-                // ถ้าอยู่ระหว่างแก้ไขและเปลี่ยนเป็น MNH ใหม่ที่ยังไม่มีในระบบ
-                // ให้เก็บ edit_id เดิมไว้ เพื่ออัปเดตข้อมูลแถวเดิม ไม่สร้างแถวใหม่
                 if (!editIdInput.value) {
                     originalMnhInput.value = "";
                     deviceType.value = "";
                     modelInput.value = "";
                     serialInput.value = "";
                     computerNameInput.value = "";
+                    stationInput.value = "";
                     ipAddressInput.value = "";
                     warrantyStartInput.value = "";
                     warrantyEndInput.value = "";
@@ -622,7 +784,7 @@
 
                 statusBox.className = "status new";
                 statusBox.innerText = editIdInput.value
-                    ? "ไม่พบรหัสนี้ในระบบ ระบบจะอัปเดตข้อมูลเดิมด้วยรหัสใหม่นี้"
+                    ? "ไม่พบรหัสนี้ในระบบ ระบบจะอัปเดตรายการเดิมด้วย MNH นี้ และยอมให้ซ้ำได้"
                     : "ไม่พบข้อมูลเดิม สามารถเพิ่มข้อมูลใหม่ได้";
             }
 
@@ -635,22 +797,8 @@
     }
 
     function editDevice(row) {
-        editIdInput.value = row.id || "";
-        originalMnhInput.value = row.mnh || "";
-        mnhInput.value = row.mnh || "";
-        deviceType.value = row.device_type || "";
-        modelInput.value = row.model || "";
-        serialInput.value = row.serial_number || "";
-        computerNameInput.value = row.computer_name || "";
-        ipAddressInput.value = row.ip_address || "";
-        warrantyStartInput.value = row.warranty_start || "";
-        warrantyEndInput.value = row.warranty_end || "";
-
-        statusBox.style.display = "block";
-        statusBox.className = "status found";
-        statusBox.innerText = "กำลังแก้ไขข้อมูลเดิม";
-
-        syncPCFields();
+        fillDevice(row, "กำลังแก้ไขข้อมูลเดิม");
+        hideDuplicateList();
 
         window.scrollTo({
             top: 0,
@@ -665,6 +813,7 @@
         modelInput.readOnly = false;
         serialInput.readOnly = false;
         statusBox.style.display = "none";
+        hideDuplicateList();
         mnhInput.focus();
     }
 
@@ -710,7 +859,8 @@
 
     mnhInput.addEventListener("blur", loadDeviceByMNH);
     mnhInput.addEventListener("change", loadDeviceByMNH);
-    mnhInput.addEventListener("input", syncPCFields);
+    // ไม่ผูก input ของ MNH กับ syncPCFields เพื่อไม่ให้ล้างค่าว่าง/ค่าระหว่างพิมพ์
+
     deviceType.addEventListener("change", syncPCFields);
 </script>
 
