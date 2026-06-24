@@ -20,6 +20,40 @@ def get_db():
     return psycopg2.connect(DATABASE_URL, sslmode="require")
 
 
+def ensure_device_extra_columns():
+    """เพิ่มคอลัมน์ใหม่ให้อัตโนมัติ กรณีฐานข้อมูลเดิมยังไม่มีฟิลด์ประกัน/IP"""
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+        ALTER TABLE devices
+        ADD COLUMN IF NOT EXISTS ip_address VARCHAR(50),
+        ADD COLUMN IF NOT EXISTS warranty_start DATE,
+        ADD COLUMN IF NOT EXISTS warranty_end DATE
+    """)
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+
+def format_device_row(row):
+    """แปลงข้อมูล date ให้เป็น yyyy-mm-dd เพื่อใช้กับ input type=date และ JSON"""
+    if not row:
+        return None
+
+    data = dict(row)
+
+    for key in ("warranty_start", "warranty_end"):
+        value = data.get(key)
+        if hasattr(value, "isoformat"):
+            data[key] = value.isoformat()
+        elif value is None:
+            data[key] = ""
+
+    return data
+
+
 def get_search_value():
     """รับค่าค้นหาจากทั้ง query string และ form เพื่อให้ค้างค่าหลังบันทึก/อัปเดต/ลบ"""
     return (
@@ -101,6 +135,8 @@ ORDER_SQL = """
 
 @app.route("/")
 def home():
+    ensure_device_extra_columns()
+
     search_raw = request.args.get("search", "").strip()
     search = clean_mnh(search_raw) or search_raw
 
@@ -117,8 +153,11 @@ def home():
                OR model ILIKE %s
                OR serial_number ILIKE %s
                OR computer_name ILIKE %s
+               OR ip_address ILIKE %s
+               OR TO_CHAR(warranty_start, 'YYYY-MM-DD') ILIKE %s
+               OR TO_CHAR(warranty_end, 'YYYY-MM-DD') ILIKE %s
             {ORDER_SQL}
-        """, (keyword, keyword, keyword, keyword, keyword))
+        """, (keyword, keyword, keyword, keyword, keyword, keyword, keyword, keyword))
     else:
         cur.execute(f"""
             SELECT *
@@ -160,6 +199,8 @@ def home():
 
 @app.route("/api/device/<path:mnh>")
 def api_device(mnh):
+    ensure_device_extra_columns()
+
     mnh = clean_mnh(mnh)
 
     if not mnh:
@@ -181,13 +222,15 @@ def api_device(mnh):
     conn.close()
 
     if row:
-        return jsonify({"found": True, "data": dict(row)})
+        return jsonify({"found": True, "data": format_device_row(row)})
 
     return jsonify({"found": False})
 
 
 @app.route("/save", methods=["POST"])
 def save():
+    ensure_device_extra_columns()
+
     current_search = get_search_value()
 
     edit_id_raw = request.form.get("edit_id", "").strip()
@@ -198,6 +241,9 @@ def save():
     model = request.form.get("model", "").strip()
     serial_number = request.form.get("serial_number", "").strip()
     computer_name = request.form.get("computer_name", "").strip()
+    ip_address = request.form.get("ip_address", "").strip()
+    warranty_start = request.form.get("warranty_start") or None
+    warranty_end = request.form.get("warranty_end") or None
 
     if not mnh:
         return "MNH ไม่ถูกต้อง กรุณากรอกใหม่", 400
@@ -237,7 +283,10 @@ def save():
                     device_type = %s,
                     model = %s,
                     serial_number = %s,
-                    computer_name = %s
+                    computer_name = %s,
+                    ip_address = %s,
+                    warranty_start = %s,
+                    warranty_end = %s
                 WHERE id = %s
             """, (
                 mnh,
@@ -245,6 +294,9 @@ def save():
                 model,
                 serial_number,
                 computer_name,
+                ip_address,
+                warranty_start,
+                warranty_end,
                 target_id
             ))
 
@@ -256,7 +308,10 @@ def save():
                         device_type = %s,
                         model = %s,
                         serial_number = %s,
-                        computer_name = %s
+                        computer_name = %s,
+                        ip_address = %s,
+                        warranty_start = %s,
+                        warranty_end = %s
                     WHERE mnh = %s
                 """, (
                     mnh,
@@ -264,6 +319,9 @@ def save():
                     model,
                     serial_number,
                     computer_name,
+                    ip_address,
+                    warranty_start,
+                    warranty_end,
                     original_mnh
                 ))
         else:
@@ -274,21 +332,30 @@ def save():
                     device_type,
                     model,
                     serial_number,
-                    computer_name
+                    computer_name,
+                    ip_address,
+                    warranty_start,
+                    warranty_end
                 )
-                VALUES (%s, %s, %s, %s, %s)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                 ON CONFLICT (mnh)
                 DO UPDATE SET
                     device_type = EXCLUDED.device_type,
                     model = EXCLUDED.model,
                     serial_number = EXCLUDED.serial_number,
-                    computer_name = EXCLUDED.computer_name
+                    computer_name = EXCLUDED.computer_name,
+                    ip_address = EXCLUDED.ip_address,
+                    warranty_start = EXCLUDED.warranty_start,
+                    warranty_end = EXCLUDED.warranty_end
             """, (
                 mnh,
                 device_type,
                 model,
                 serial_number,
-                computer_name
+                computer_name,
+                ip_address,
+                warranty_start,
+                warranty_end
             ))
 
         conn.commit()
@@ -320,6 +387,8 @@ def delete_device(id):
 
 @app.route("/export_excel")
 def export_excel():
+    ensure_device_extra_columns()
+
     search_raw = request.args.get("search", "").strip()
     search = clean_mnh(search_raw) or search_raw
 
@@ -334,15 +403,21 @@ def export_excel():
                 device_type,
                 model,
                 serial_number,
-                mnh
+                mnh,
+                ip_address,
+                warranty_start,
+                warranty_end
             FROM devices
             WHERE mnh ILIKE %s
                OR device_type ILIKE %s
                OR model ILIKE %s
                OR serial_number ILIKE %s
                OR computer_name ILIKE %s
+               OR ip_address ILIKE %s
+               OR TO_CHAR(warranty_start, 'YYYY-MM-DD') ILIKE %s
+               OR TO_CHAR(warranty_end, 'YYYY-MM-DD') ILIKE %s
             {ORDER_SQL}
-        """, (keyword, keyword, keyword, keyword, keyword))
+        """, (keyword, keyword, keyword, keyword, keyword, keyword, keyword, keyword))
     else:
         cur.execute(f"""
             SELECT
@@ -350,7 +425,10 @@ def export_excel():
                 device_type,
                 model,
                 serial_number,
-                mnh
+                mnh,
+                ip_address,
+                warranty_start,
+                warranty_end
             FROM devices
             {ORDER_SQL}
         """)
@@ -369,7 +447,10 @@ def export_excel():
         "ประเภท",
         "รุ่น",
         "Serial Number",
-        "MNH"
+        "MNH",
+        "IP Address",
+        "วันเริ่มต้นประกัน",
+        "วันหมดประกัน"
     ]
 
     ws.append(headers)
@@ -399,6 +480,9 @@ def export_excel():
             excel_text(row.get("model")),
             excel_text(row.get("serial_number")),
             excel_text(row.get("mnh")),
+            excel_text(row.get("ip_address")),
+            excel_text(row.get("warranty_start")),
+            excel_text(row.get("warranty_end")),
         ])
 
     for row in ws.iter_rows():
@@ -418,6 +502,9 @@ def export_excel():
         "C": 30,
         "D": 24,
         "E": 20,
+        "F": 18,
+        "G": 20,
+        "H": 20,
     }
 
     for col, width in column_widths.items():

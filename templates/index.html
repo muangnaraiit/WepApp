@@ -246,7 +246,7 @@
 
         table {
             width: 100%;
-            min-width: 900px;
+            min-width: 1200px;
             border-collapse: collapse;
             background: white;
         }
@@ -391,13 +391,14 @@
                         <option value="Monitor">Monitor</option>
                         <option value="Printer">Printer</option>
                         <option value="Scanner">Scanner</option>
+                        <option value="Paper Shredder">Paper Shredder</option>
                         <option value="UPS">UPS</option>
                         <option value="Notebook">Notebook</option>
                         <option value="Projector">Projector</option>
                         <option value="Phone">Phone</option>
-			<option value="Tablet">Tablet</option>
+			            <option value="Tablet">Tablet</option>
                         <option value="Switch Hub">Switch Hub</option>
-			<option value="Wifi">Wifi</option>
+			            <option value="Wifi">Wifi</option>
                     </select>
 
                     <label>รุ่นอุปกรณ์</label>
@@ -420,6 +421,15 @@
                         {% endfor %}
                     </datalist>
 
+                    <label>IP Address</label>
+                    <input type="text" name="ip_address" id="ip_address" placeholder="เช่น 192.168.1.100">
+
+                    <label>วันเริ่มต้นประกัน</label>
+                    <input type="date" name="warranty_start" id="warranty_start">
+
+                    <label>วันหมดประกัน</label>
+                    <input type="date" name="warranty_end" id="warranty_end">
+
                     <button type="submit" class="btn-primary">บันทึก / อัปเดตข้อมูล</button>
                     <button type="button" class="btn-clear" onclick="clearForm()">ล้างฟอร์ม</button>
 
@@ -435,7 +445,7 @@
 
             <div class="card-body">
                 <form method="get" action="/" class="search-row" id="searchForm">
-                    <input type="text" name="search" id="listSearchInput" value="{{ search }}" placeholder="ค้นหา MNH / รุ่น / Serial / ชื่อเครื่อง">
+                    <input type="text" name="search" id="listSearchInput" value="{{ search }}" placeholder="ค้นหา MNH / รุ่น / Serial / ชื่อเครื่อง / IP / วันที่ประกัน">
 
                     <button type="submit" class="btn-search">
                         🔍 ค้นหา
@@ -455,6 +465,9 @@
                                 <th>รุ่น</th>
                                 <th>Serial</th>
                                 <th>MNH</th>
+                                <th>IP</th>
+                                <th>เริ่มประกัน</th>
+                                <th>หมดประกัน</th>
                                 <th>ลบ</th>
                             </tr>
                         </thead>
@@ -476,6 +489,9 @@
                                 <td>{{ row.model or '-' }}</td>
                                 <td>{{ row.serial_number or '-' }}</td>
                                 <td class="mnh">{{ row.mnh }}</td>
+                                <td>{{ row.ip_address or '-' }}</td>
+                                <td>{{ row.warranty_start or '-' }}</td>
+                                <td>{{ row.warranty_end or '-' }}</td>
                                 <td>
                                     <div class="action-cell">
                                         <form
@@ -493,7 +509,7 @@
                             </tr>
                             {% else %}
                             <tr>
-                                <td colspan="6" class="empty">ไม่พบข้อมูลอุปกรณ์</td>
+                                <td colspan="9" class="empty">ไม่พบข้อมูลอุปกรณ์</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -514,6 +530,9 @@
     const modelInput = document.getElementById("model");
     const serialInput = document.getElementById("serial_number");
     const computerNameInput = document.getElementById("computer_name");
+    const ipAddressInput = document.getElementById("ip_address");
+    const warrantyStartInput = document.getElementById("warranty_start");
+    const warrantyEndInput = document.getElementById("warranty_end");
     const statusBox = document.getElementById("statusBox");
     const currentSearchInput = document.getElementById("current_search");
     const listSearchInput = document.getElementById("listSearchInput");
@@ -581,6 +600,9 @@
                 modelInput.value = d.model || "";
                 serialInput.value = d.serial_number || "";
                 computerNameInput.value = d.computer_name || "";
+                ipAddressInput.value = d.ip_address || "";
+                warrantyStartInput.value = d.warranty_start || "";
+                warrantyEndInput.value = d.warranty_end || "";
 
                 statusBox.className = "status found";
                 statusBox.innerText = "พบข้อมูลเดิม ดึงข้อมูลตัวนี้มาให้แก้ไขแล้ว";
@@ -593,6 +615,9 @@
                     modelInput.value = "";
                     serialInput.value = "";
                     computerNameInput.value = "";
+                    ipAddressInput.value = "";
+                    warrantyStartInput.value = "";
+                    warrantyEndInput.value = "";
                 }
 
                 statusBox.className = "status new";
@@ -617,6 +642,9 @@
         modelInput.value = row.model || "";
         serialInput.value = row.serial_number || "";
         computerNameInput.value = row.computer_name || "";
+        ipAddressInput.value = row.ip_address || "";
+        warrantyStartInput.value = row.warranty_start || "";
+        warrantyEndInput.value = row.warranty_end || "";
 
         statusBox.style.display = "block";
         statusBox.className = "status found";
